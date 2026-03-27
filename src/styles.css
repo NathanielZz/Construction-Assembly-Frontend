@@ -1,0 +1,469 @@
+/* ===========================
+   Global minimalist theme
+   =========================== */
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f2f2f2; /* light gray background */
+  color: #333;
+}
+
+/* ===========================
+   Centered container
+   =========================== */
+.container {
+  max-width: 900px;
+  margin: 40px auto; /* centers content */
+  padding: 30px;
+  background: #fff; /* white card-like background */
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* subtle shadow */
+}
+
+/* ===========================
+   Headings
+   =========================== */
+h1 {
+  margin-top: 0;
+  font-weight: 500;
+  color: #222;
+}
+
+.subtitle {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+/* ===========================
+   Search Bar
+   =========================== */
+.search-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  align-items: flex-end;
+}
+
+.search-field {
+  flex: 1; /* input takes full width */
+}
+
+.search-btn {
+  padding: 10px 16px;
+  background: #2596be;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* ===========================
+   Filters
+   =========================== */
+.filters {
+  display: flex;
+  gap: 10px;
+}
+
+.filter-btn {
+  padding: 8px 14px;
+  border: 1px solid #444;
+  background: #fff;
+  color: #444;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.filter-btn.active {
+  background: #444;
+  color: #fff;
+}
+
+/* ===========================
+   Top actions
+   =========================== */
+.top-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.register-btn {
+  background: #2596be;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* ===========================
+   Uiverse Floating Label Inputs
+   =========================== */
+.form__group {
+  position: relative;
+  padding: 14px 0 0;
+  width: 100%;
+}
+
+.form__field {
+  font-family: inherit;
+  width: 100%;
+  border: none;
+  border-bottom: 2px solid #9b9b9b;
+  outline: 0;
+  font-size: 15px;
+  color: #333;
+  padding: 6px 0;
+  background: transparent;
+  transition: border-color 0.2s;
+}
+
+.form__field::placeholder {
+  color: transparent;
+}
+
+.form__field:placeholder-shown ~ .form__label {
+  font-size: 15px;
+  cursor: text;
+  top: 18px;
+}
+
+.form__label {
+  position: absolute;
+  top: 0;
+  display: block;
+  transition: 0.2s;
+  font-size: 15px;
+  color: #9b9b9b;
+  pointer-events: none;
+}
+
+.form__field:focus {
+  padding-bottom: 5px;
+  font-weight: 600;
+  border-width: 3px;
+  border-image: linear-gradient(to right, #116399, #38caef);
+  border-image-slice: 1;
+}
+
+.form__field:focus ~ .form__label {
+  font-size: 15px;
+  color: #38caef;
+  font-weight: 600;
+}
+
+/* reset input */
+.form__field:required, .form__field:invalid {
+  box-shadow: none;
+}
+
+/* ===========================
+   Results Table
+   =========================== */
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.results-table th,
+.results-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.results-table th {
+  background: #f0f0f0;
+  text-align: left;
+  font-weight: 500;
+}
+
+/* ===========================
+   Action buttons
+   =========================== */
+.edit-btn,
+.delete-btn {
+  padding: 6px 10px;
+  margin-right: 6px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.edit-btn {
+  background: #32CD32; /* green */
+  color: #fff;
+}
+
+.delete-btn {
+  background: #FF0000; /* red */
+  color: #fff;
+}
+
+/* ===========================
+   Modal
+   =========================== */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 6px;
+  width: 600px;
+  max-width: 90%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 18px;
+}
+
+.modal-body {
+  max-height: 70vh; /* scrollable */
+  overflow-y: auto;
+  padding: 18px;
+}
+
+/* ===========================
+   Entry Form
+   =========================== */
+.entry-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* tighter spacing */
+}
+
+.item-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.code-field {
+  flex: 0 0 140px; /* enough for 12 chars */
+}
+
+.quantity-field {
+  flex: 0 0 120px; /* enough for 10 digits */
+}
+
+.description-field {
+  flex: 1; /* description takes remaining space */
+}
+
+.add-item-btn {
+  background: #2596be;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 0; /* no extra gap above actions */
+}
+
+.form-actions {
+  display: flex;
+  margin-top: 0;
+}
+
+.form-actions button {
+  flex: 1;
+  padding: 12px;
+  font-size: 16px;
+}
+
+.save-btn {
+  background: #32CD32; /* green */
+  color: #fff;
+  border: none;
+  border-radius: 0 0 0 6px;
+  cursor: pointer;
+}
+
+.cancel-btn {
+  background: #FF0000; /* red */
+  color: #fff;
+  border: none;
+  border-radius: 0 0 6px 0;
+  cursor: pointer;
+}
+
+
+/* ===========================
+   General Button Styles
+   =========================== */
+button {
+  transition: all 0.2s ease; /* smooth hover/active effect */
+}
+
+/* ===========================
+   Filter Buttons
+   =========================== */
+.filter-btn {
+  padding: 8px 14px;
+  border: 1px solid #444;
+  background: #fff;
+  color: #444;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.filter-btn:hover {
+  background: #e6e6e6;
+  border-color: #2596be;
+  color: #2596be;
+}
+
+.filter-btn.active {
+  background: #2596be;
+  color: #fff;
+  border-color: #2596be;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); /* pressed feel */
+}
+
+/* ===========================
+   Register Button
+   =========================== */
+.register-btn {
+  background: #2596be;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.register-btn:hover {
+  background: #1d7aa0;
+}
+
+.register-btn:active {
+  background: #16627a;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* ===========================
+   Search Button
+   =========================== */
+.search-btn {
+  padding: 10px 16px;
+  background: #2596be;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.search-btn:hover {
+  background: #1d7aa0;
+}
+
+.search-btn:active {
+  background: #16627a;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* ===========================
+   Add Item Button
+   =========================== */
+.add-item-btn {
+  background: #2596be;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.add-item-btn:hover {
+  background: #1d7aa0;
+}
+
+.add-item-btn:active {
+  background: #16627a;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* ===========================
+   Save / Cancel Buttons
+   =========================== */
+.save-btn {
+  background: #32CD32; /* green */
+  color: #fff;
+  border: none;
+  border-radius: 0 0 0 6px;
+  cursor: pointer;
+}
+
+.save-btn:hover {
+  background: #28a428;
+}
+
+.save-btn:active {
+  background: #1f7a1f;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.cancel-btn {
+  background: #FF0000; /* red */
+  color: #fff;
+  border: none;
+  border-radius: 0 0 6px 0;
+  cursor: pointer;
+}
+
+.cancel-btn:hover {
+  background: #cc0000;
+}
+
+.cancel-btn:active {
+  background: #990000;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* ===========================
+   Edit / Delete Buttons
+   =========================== */
+.edit-btn {
+  background: #32CD32;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.edit-btn:hover {
+  background: #28a428;
+}
+
+.edit-btn:active {
+  background: #1f7a1f;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.delete-btn {
+  background: #FF0000;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  background: #cc0000;
+}
+
+.delete-btn:active {
+  background: #990000;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
