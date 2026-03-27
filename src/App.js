@@ -4,9 +4,13 @@ import SearchBar from "./components/SearchBar";
 import Filters from "./components/Filters";
 import ResultsTable from "./components/ResultsTable";
 import EntryForm from "./components/EntryForm";
+import Login from "./login"; // 👈 ADDED
 import "./styles.css";
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    !!sessionStorage.getItem("token") // 👈 changed from "auth" to "token"
+  );                                                  // 👈 ADDED
   const [entries, setEntries] = useState([]);
   const [category, setCategory] = useState("all");
   const [showModal, setShowModal] = useState(false);
@@ -18,8 +22,12 @@ function App() {
   }, [category]);
 
   useEffect(() => {
-    loadEntries();
+    if (isAuthenticated) loadEntries(); // 👈 ADDED if check
   }, [loadEntries]);
+
+  if (!isAuthenticated) { // 👈 ADDED
+    return <Login onLogin={() => setIsAuthenticated(true)} />; // 👈 ADDED
+  } // 👈 ADDED
 
   async function handleSearch(query) {
     if (!query) {
