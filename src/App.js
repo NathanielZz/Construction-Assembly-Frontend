@@ -22,8 +22,8 @@ function App() {
   }, [category]);
 
   useEffect(() => {
-    if (isAuthenticated) loadEntries(); // 👈 ADDED if check
-  }, [loadEntries]);
+    if (isAuthenticated) loadEntries();
+  }, [isAuthenticated, loadEntries]);
 
   if (!isAuthenticated) { // 👈 ADDED
     return <Login onLogin={() => setIsAuthenticated(true)} />; // 👈 ADDED
