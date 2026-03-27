@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { getEntries, searchEntries, addEntry, updateEntry, deleteEntry } from "./api";
 import SearchBar from "./components/SearchBar";
 import Filters from "./components/Filters";
@@ -9,21 +9,19 @@ import "./styles.css";
 function App() {
   const [entries, setEntries] = useState([]);
   const [category, setCategory] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
 
-  useEffect(() => {
-    loadEntries();
-  }, [category]);
-
-  async function loadEntries() {
+  const loadEntries = useCallback(async () => {
     const data = await getEntries(category);
     setEntries(data);
-  }
+  }, [category]);
+
+  useEffect(() => {
+    loadEntries();
+  }, [loadEntries]);
 
   async function handleSearch(query) {
-    setSearchQuery(query);
     if (!query) {
       loadEntries();
     } else {
