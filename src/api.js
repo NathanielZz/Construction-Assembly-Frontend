@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:5000/progress";
+const API_URL = "https://construction-assembly-backend.onrender.com/progress";
 
 export async function getEntries(category = "all") {
   let url = API_URL;
