@@ -2,9 +2,8 @@ import React, { useState } from "react";
 
 function EntryForm({ entry, onClose, onSave }) {
   const [formData, setFormData] = useState(
-    entry || { category: "", title: "", image: null, items: [{ code: "", quantity: "", description: "" }] }
+    entry || { category: "", title: "", items: [{ code: "", quantity: "", description: "" }] }
   );
-  const [preview, setPreview] = useState(entry?.image || null);
 
   const handleChange = (e, idx) => {
     const { name, value } = e.target;
@@ -15,19 +14,6 @@ function EntryForm({ entry, onClose, onSave }) {
       items[idx][name] = value;
       setFormData({ ...formData, items });
     }
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData({ ...formData, image: file });
-      setPreview(URL.createObjectURL(file));
-    }
-  };
-
-  const removeImage = () => {
-    setFormData({ ...formData, image: null });
-    setPreview(null);
   };
 
   const addItem = () => {
@@ -49,13 +35,29 @@ function EntryForm({ entry, onClose, onSave }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     const data = new FormData();
-    data.append("category", formData.category); // ✅ camelCase key
+    data.append("category", formData.category);
     data.append("title", formData.title);
-    if (formData.image) {
-      data.append("image", formData.image);
-    }
     data.append("items", JSON.stringify(formData.items));
     onSave(data);
+  };
+
+  // ✅ Download materials list
+  const handleDownload = async () => {
+    try {
+      const token = sessionStorage.getItem("token");
+      const response = await fetch("https://construction-assembly-backend.onrender.com/progress/download", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "materials.txt";
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download failed:", err);
+    }
   };
 
   return (
@@ -97,45 +99,6 @@ function EntryForm({ entry, onClose, onSave }) {
               />
               <label className="form__label">Title</label>
             </div>
-
-            {/* Image Upload + Preview */}
-            <div className="form__group field">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="form__field"
-              />
-              <label className="form__label">Upload Image</label>
-            </div>
-
-            {preview && (
-              <div style={{ marginTop: "10px", position: "relative", display: "inline-block" }}>
-                <img
-                  src={preview}
-                  alt="Preview"
-                  style={{ maxWidth: "100%", maxHeight: "200px", borderRadius: "6px", border: "1px solid #ccc" }}
-                />
-                <button
-                  type="button"
-                  onClick={removeImage}
-                  style={{
-                    position: "absolute",
-                    top: "5px",
-                    right: "5px",
-                    background: "red",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "50%",
-                    width: "24px",
-                    height: "24px",
-                    cursor: "pointer"
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            )}
 
             {/* Items Section */}
             {formData.items.map((item, idx) => (
@@ -190,6 +153,7 @@ function EntryForm({ entry, onClose, onSave }) {
             <div className="form-actions">
               <button type="submit" className="save-btn">Save</button>
               <button type="button" className="cancel-btn" onClick={onClose}>Cancel</button>
+              <button type="button" className="download-btn" onClick={handleDownload}>Download Materials</button>
             </div>
           </form>
         </div>

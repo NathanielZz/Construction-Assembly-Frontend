@@ -1,6 +1,6 @@
 const API_URL = "https://construction-assembly-backend.onrender.com/progress";
 
-// ✅ Helper for JSON requests (safe for non-FormData)
+// ✅ Helper for JSON requests
 function getAuthHeaders() {
   const token = sessionStorage.getItem("token");
   return {
@@ -25,30 +25,22 @@ export async function searchEntries(query) {
   return res.json();
 }
 
-// ✅ Add entry with image upload (FormData)
+// ✅ Add entry (JSON only)
 export async function addEntry(entryData) {
-  const token = sessionStorage.getItem("token");
   const res = await fetch(API_URL, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      // ❌ Do not set Content-Type here, browser will set multipart/form-data
-    },
-    body: entryData, // FormData from EntryForm
+    headers: getAuthHeaders(),
+    body: JSON.stringify(entryData),
   });
   return res.json();
 }
 
-// ✅ Update entry with image upload (FormData)
+// ✅ Update entry (JSON only)
 export async function updateEntry(id, entryData) {
-  const token = sessionStorage.getItem("token");
   const res = await fetch(`${API_URL}/${id}`, {
     method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      // ❌ Same rule: no Content-Type for FormData
-    },
-    body: entryData,
+    headers: getAuthHeaders(),
+    body: JSON.stringify(entryData),
   });
   return res.json();
 }
@@ -60,4 +52,13 @@ export async function deleteEntry(id) {
     headers: getAuthHeaders(),
   });
   return res.json();
+}
+
+// ✅ Download materials list
+export async function downloadMaterials() {
+  const token = sessionStorage.getItem("token");
+  const res = await fetch(`${API_URL}/download`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.blob(); // caller handles saving
 }

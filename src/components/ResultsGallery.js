@@ -23,12 +23,6 @@ function ResultsGallery({ entries, onEdit, onDelete }) {
 
       {entries.map((entry) => (
         <div key={entry._id} className="card">
-          {entry.image ? (
-            <img src={entry.image} alt={entry.title} className="card-image" />
-          ) : (
-            <div className="card-image placeholder">No Image</div>
-          )}
-
           <div className="card-content">
             <h3>{entry.title}</h3>
             <p className="category">{formatCategory(entry.category)}</p>
@@ -43,30 +37,6 @@ function ResultsGallery({ entries, onEdit, onDelete }) {
       {selectedEntry && (
         <Modal onClose={() => setSelectedEntry(null)}>
           <h2>{selectedEntry.title}</h2>
-
-          {selectedEntry.image ? (
-            <img
-              src={selectedEntry.image}
-              alt={selectedEntry.title}
-              style={{ maxWidth: "100%", marginBottom: "12px" }}
-            />
-          ) : (
-            <div
-              style={{
-                width: "100%",
-                height: "200px",
-                background: "#eee",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#999",
-                marginBottom: "12px",
-              }}
-            >
-              No Image
-            </div>
-          )}
-
           <p><strong>Category:</strong> {formatCategory(selectedEntry.category)}</p>
 
           <h3>Materials</h3>
