@@ -160,8 +160,6 @@ h1 {
 }
 
 /* ===========================
-<<<<<<< HEAD
-=======
    Results Table
    =========================== */
 .results-table {
@@ -183,7 +181,6 @@ h1 {
 }
 
 /* ===========================
->>>>>>> b33ae45582ed08c685263ee54ab9442edfafef0e
    Action buttons
    =========================== */
 .edit-btn,
@@ -574,8 +571,7 @@ button {
     padding: 10px;
   }
 }
-  
-<<<<<<< HEAD
+
 /* ===========================
    Gallery Cards
    =========================== */
@@ -661,5 +657,3 @@ button {
 .reorder-buttons button:hover {
   background: #1d7aa0;
 }
-=======
->>>>>>> b33ae45582ed08c685263ee54ab9442edfafef0e
