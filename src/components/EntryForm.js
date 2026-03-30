@@ -25,6 +25,12 @@ function EntryForm({ entry, onClose, onSave }) {
     }
   };
 
+  // ✅ Remove uploaded image
+  const removeImage = () => {
+    setFormData({ ...formData, image: null });
+    setPreview(null);
+  };
+
   const addItem = () => {
     setFormData({
       ...formData,
@@ -44,7 +50,7 @@ function EntryForm({ entry, onClose, onSave }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     const data = new FormData();
-    data.append("category", formData.category);
+    data.append("category", formData.category.toLowerCase());
     data.append("title", formData.title);
     if (formData.image) {
       data.append("image", formData.image);
@@ -71,8 +77,8 @@ function EntryForm({ entry, onClose, onSave }) {
                 required
               >
                 <option value="">Select category</option>
-                <option value="singlePhase">Single Phase</option>
-                <option value="threePhase">Three Phase</option>
+                <option value="single phase">Single Phase</option>
+                <option value="three phase">Three Phase</option>
                 <option value="anchor">Anchor</option>
                 <option value="secondary">Secondary</option>
               </select>
@@ -105,12 +111,30 @@ function EntryForm({ entry, onClose, onSave }) {
             </div>
 
             {preview && (
-              <div style={{ marginTop: "10px" }}>
+              <div style={{ marginTop: "10px", position: "relative", display: "inline-block" }}>
                 <img
                   src={preview}
                   alt="Preview"
                   style={{ maxWidth: "100%", maxHeight: "200px", borderRadius: "6px", border: "1px solid #ccc" }}
                 />
+                <button
+                  type="button"
+                  onClick={removeImage}
+                  style={{
+                    position: "absolute",
+                    top: "5px",
+                    right: "5px",
+                    background: "red",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "50%",
+                    width: "24px",
+                    height: "24px",
+                    cursor: "pointer"
+                  }}
+                >
+                  ×
+                </button>
               </div>
             )}
 

@@ -1,6 +1,6 @@
 const API_URL = "https://construction-assembly-backend.onrender.com/progress";
 
-// ✅ Helper for JSON requests (not used for FormData)
+// ✅ Helper for JSON requests (safe for non-FormData)
 function getAuthHeaders() {
   const token = sessionStorage.getItem("token");
   return {
@@ -32,9 +32,9 @@ export async function addEntry(entryData) {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
-      // ❌ no Content-Type, browser sets it for FormData
+      // ❌ Do not set Content-Type here, browser will set multipart/form-data
     },
-    body: entryData, // entryData is FormData from EntryForm
+    body: entryData, // FormData from EntryForm
   });
   return res.json();
 }
@@ -46,8 +46,9 @@ export async function updateEntry(id, entryData) {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`,
+      // ❌ Same rule: no Content-Type for FormData
     },
-    body: entryData, // FormData again
+    body: entryData,
   });
   return res.json();
 }
