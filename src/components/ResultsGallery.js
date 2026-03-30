@@ -17,7 +17,7 @@ function ResultsGallery({ entries, onEdit, onDelete }) {
 
       {entries.map((entry) => (
         <div key={entry._id} className="card">
-          {/* Image display */}
+          {/* ✅ Cloudinary returns a full URL, so use entry.image directly */}
           {entry.image ? (
             <img src={entry.image} alt={entry.title} className="card-image" />
           ) : (
