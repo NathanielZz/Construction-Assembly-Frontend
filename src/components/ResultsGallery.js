@@ -11,13 +11,18 @@ function ResultsGallery({ entries, onEdit, onDelete }) {
     }
   };
 
+  // ✅ Helper to format camelCase into spaced words
+  const formatCategory = (cat) => {
+    if (!cat) return "";
+    return cat.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase());
+  };
+
   return (
     <div className="gallery">
       {entries.length === 0 && <p>No entries found.</p>}
 
       {entries.map((entry) => (
         <div key={entry._id} className="card">
-          {/* ✅ Cloudinary returns a full URL, so use entry.image directly */}
           {entry.image ? (
             <img src={entry.image} alt={entry.title} className="card-image" />
           ) : (
@@ -26,7 +31,7 @@ function ResultsGallery({ entries, onEdit, onDelete }) {
 
           <div className="card-content">
             <h3>{entry.title}</h3>
-            <p className="category">{entry.category}</p>
+            <p className="category">{formatCategory(entry.category)}</p>
           </div>
 
           <button className="view-btn" onClick={() => setSelectedEntry(entry)}>
@@ -35,7 +40,6 @@ function ResultsGallery({ entries, onEdit, onDelete }) {
         </div>
       ))}
 
-      {/* Modal for details */}
       {selectedEntry && (
         <Modal onClose={() => setSelectedEntry(null)}>
           <h2>{selectedEntry.title}</h2>
@@ -63,7 +67,7 @@ function ResultsGallery({ entries, onEdit, onDelete }) {
             </div>
           )}
 
-          <p><strong>Category:</strong> {selectedEntry.category}</p>
+          <p><strong>Category:</strong> {formatCategory(selectedEntry.category)}</p>
 
           <h3>Materials</h3>
           <ul>
