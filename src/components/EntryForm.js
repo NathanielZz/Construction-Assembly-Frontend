@@ -2,9 +2,14 @@ import React, { useState } from "react";
 
 function EntryForm({ entry, onClose, onSave }) {
   const [formData, setFormData] = useState(
+<<<<<<< HEAD
     entry || { category: "", title: "", image: null, items: [{ code: "", quantity: "", description: "" }] }
   );
   const [preview, setPreview] = useState(entry?.image || null); // 👈 preview state
+=======
+    entry || { category: "", title: "", items: [{ code: "", quantity: "", description: "" }] }
+  );
+>>>>>>> b33ae45582ed08c685263ee54ab9442edfafef0e
 
   const handleChange = (e, idx) => {
     const { name, value } = e.target;
@@ -17,6 +22,7 @@ function EntryForm({ entry, onClose, onSave }) {
     }
   };
 
+<<<<<<< HEAD
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -25,6 +31,8 @@ function EntryForm({ entry, onClose, onSave }) {
     }
   };
 
+=======
+>>>>>>> b33ae45582ed08c685263ee54ab9442edfafef0e
   const addItem = () => {
     setFormData({
       ...formData,
@@ -32,6 +40,7 @@ function EntryForm({ entry, onClose, onSave }) {
     });
   };
 
+<<<<<<< HEAD
   const moveItem = (idx, direction) => {
     const items = [...formData.items];
     const newIndex = idx + direction;
@@ -51,6 +60,11 @@ function EntryForm({ entry, onClose, onSave }) {
     }
     data.append("items", JSON.stringify(formData.items));
     onSave(data);
+=======
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(formData);
+>>>>>>> b33ae45582ed08c685263ee54ab9442edfafef0e
   };
 
   return (
@@ -93,6 +107,7 @@ function EntryForm({ entry, onClose, onSave }) {
               <label className="form__label">Title</label>
             </div>
 
+<<<<<<< HEAD
             {/* Image Upload + Preview */}
             <div className="form__group field">
               <input
@@ -114,6 +129,8 @@ function EntryForm({ entry, onClose, onSave }) {
               </div>
             )}
 
+=======
+>>>>>>> b33ae45582ed08c685263ee54ab9442edfafef0e
             {/* Items Section */}
             {formData.items.map((item, idx) => (
               <div key={idx} className="item-row">
@@ -137,6 +154,10 @@ function EntryForm({ entry, onClose, onSave }) {
                     value={item.quantity}
                     onChange={(e) => handleChange(e, idx)}
                     className="form__field"
+<<<<<<< HEAD
+=======
+                    maxLength={10}
+>>>>>>> b33ae45582ed08c685263ee54ab9442edfafef0e
                   />
                   <label className="form__label">Quantity</label>
                 </div>
@@ -152,11 +173,14 @@ function EntryForm({ entry, onClose, onSave }) {
                   />
                   <label className="form__label">Description</label>
                 </div>
+<<<<<<< HEAD
 
                 <div className="reorder-buttons">
                   <button type="button" onClick={() => moveItem(idx, -1)}>↑</button>
                   <button type="button" onClick={() => moveItem(idx, 1)}>↓</button>
                 </div>
+=======
+>>>>>>> b33ae45582ed08c685263ee54ab9442edfafef0e
               </div>
             ))}
 

@@ -2,15 +2,26 @@ import React, { useState, useEffect, useCallback } from "react";
 import { getEntries, searchEntries, addEntry, updateEntry, deleteEntry } from "./api";
 import SearchBar from "./components/SearchBar";
 import Filters from "./components/Filters";
+<<<<<<< HEAD
 import ResultsGallery from "./components/ResultsGallery"; // ✅ single import
 import EntryForm from "./components/EntryForm";
 import Login from "./login";
+=======
+import ResultsTable from "./components/ResultsTable";
+import EntryForm from "./components/EntryForm";
+import Login from "./login"; // 👈 ADDED
+>>>>>>> b33ae45582ed08c685263ee54ab9442edfafef0e
 import "./styles.css";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
+<<<<<<< HEAD
     !!sessionStorage.getItem("token")
   );
+=======
+    !!sessionStorage.getItem("token") // 👈 changed from "auth" to "token"
+  );                                                  // 👈 ADDED
+>>>>>>> b33ae45582ed08c685263ee54ab9442edfafef0e
   const [entries, setEntries] = useState([]);
   const [category, setCategory] = useState("all");
   const [showModal, setShowModal] = useState(false);
@@ -25,9 +36,15 @@ function App() {
     if (isAuthenticated) loadEntries();
   }, [isAuthenticated, loadEntries]);
 
+<<<<<<< HEAD
   if (!isAuthenticated) {
     return <Login onLogin={() => setIsAuthenticated(true)} />;
   }
+=======
+  if (!isAuthenticated) { // 👈 ADDED
+    return <Login onLogin={() => setIsAuthenticated(true)} />; // 👈 ADDED
+  } // 👈 ADDED
+>>>>>>> b33ae45582ed08c685263ee54ab9442edfafef0e
 
   async function handleSearch(query) {
     if (!query) {
@@ -68,7 +85,11 @@ function App() {
         </button>
       </div>
 
+<<<<<<< HEAD
       <ResultsGallery
+=======
+      <ResultsTable
+>>>>>>> b33ae45582ed08c685263ee54ab9442edfafef0e
         entries={entries}
         onEdit={(entry) => {
           setEditingEntry(entry);
@@ -91,4 +112,8 @@ function App() {
   );
 }
 
+<<<<<<< HEAD
 export default App;
+=======
+export default App;
+>>>>>>> b33ae45582ed08c685263ee54ab9442edfafef0e

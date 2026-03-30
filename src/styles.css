@@ -160,6 +160,30 @@ h1 {
 }
 
 /* ===========================
+<<<<<<< HEAD
+=======
+   Results Table
+   =========================== */
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.results-table th,
+.results-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.results-table th {
+  background: #f0f0f0;
+  text-align: left;
+  font-weight: 500;
+}
+
+/* ===========================
+>>>>>>> b33ae45582ed08c685263ee54ab9442edfafef0e
    Action buttons
    =========================== */
 .edit-btn,
@@ -551,6 +575,7 @@ button {
   }
 }
   
+<<<<<<< HEAD
 /* ===========================
    Gallery Cards
    =========================== */
@@ -636,3 +661,5 @@ button {
 .reorder-buttons button:hover {
   background: #1d7aa0;
 }
+=======
+>>>>>>> b33ae45582ed08c685263ee54ab9442edfafef0e

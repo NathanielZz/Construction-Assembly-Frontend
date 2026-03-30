@@ -1,11 +1,11 @@
 const API_URL = "https://construction-assembly-backend.onrender.com/progress";
 
+// ✅ Helper for JSON requests (not used for FormData)
 function getAuthHeaders() {
   const token = sessionStorage.getItem("token");
   return {
-    Authorization: `Bearer ${token}`,
-    // ⚠️ Do NOT set Content-Type here when sending FormData
     "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
   };
 }
 
@@ -13,23 +13,19 @@ function getAuthHeaders() {
 export async function getEntries(category = "all") {
   let url = API_URL;
   if (category && category !== "all") url += `?category=${category}`;
-  const token = sessionStorage.getItem("token");
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await fetch(url, { headers: getAuthHeaders() });
   return res.json();
 }
 
 // ✅ Search entries
 export async function searchEntries(query) {
-  const token = sessionStorage.getItem("token");
   const res = await fetch(`${API_URL}/search?q=${encodeURIComponent(query)}`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: getAuthHeaders(),
   });
   return res.json();
 }
 
-// ✅ Add entry with image upload
+// ✅ Add entry with image upload (FormData)
 export async function addEntry(entryData) {
   const token = sessionStorage.getItem("token");
   const res = await fetch(API_URL, {
@@ -43,7 +39,7 @@ export async function addEntry(entryData) {
   return res.json();
 }
 
-// ✅ Update entry with image upload
+// ✅ Update entry with image upload (FormData)
 export async function updateEntry(id, entryData) {
   const token = sessionStorage.getItem("token");
   const res = await fetch(`${API_URL}/${id}`, {
@@ -58,9 +54,9 @@ export async function updateEntry(id, entryData) {
 
 // ✅ Delete entry
 export async function deleteEntry(id) {
-  const token = sessionStorage.getItem("token");
-  await fetch(`${API_URL}/${id}`, {
+  const res = await fetch(`${API_URL}/${id}`, {
     method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: getAuthHeaders(),
   });
+  return res.json();
 }
