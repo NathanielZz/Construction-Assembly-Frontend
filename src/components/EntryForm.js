@@ -139,24 +139,7 @@ function EntryForm({ entry, onClose, onSave }) {
     }
   };
 
-  // ✅ Download materials list
-  const handleDownload = async () => {
-    try {
-      const token = sessionStorage.getItem("token");
-      const response = await fetch("https://construction-assembly-backend.onrender.com/progress/download", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "materials.txt";
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Download failed:", err);
-    }
-  };
+
 
   return (
     <div className="modal-overlay">
