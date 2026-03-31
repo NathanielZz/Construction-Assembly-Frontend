@@ -1,4 +1,4 @@
-const API_URL = "https://construction-assembly-backend.onrender.com/progress";
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/progress";
 
 // ✅ Helper for JSON requests
 function getAuthHeaders() {
@@ -25,22 +25,49 @@ export async function searchEntries(query) {
   return res.json();
 }
 
-// ✅ Add entry (JSON only)
+
+// Add entry (supports FormData for image upload)
 export async function addEntry(entryData) {
+  let headers = {};
+  let body = entryData;
+  if (!(entryData instanceof FormData)) {
+    headers = getAuthHeaders();
+    body = JSON.stringify(entryData);
+  } else {
+    headers = { Authorization: getAuthHeaders().Authorization };
+  }
   const res = await fetch(API_URL, {
     method: "POST",
-    headers: getAuthHeaders(),
-    body: JSON.stringify(entryData),
+    headers,
+    body,
   });
   return res.json();
 }
 
-// ✅ Update entry (JSON only)
+
+// Update entry (supports FormData for image upload)
 export async function updateEntry(id, entryData) {
+  let headers = {};
+  let body = entryData;
+  if (!(entryData instanceof FormData)) {
+    headers = getAuthHeaders();
+    body = JSON.stringify(entryData);
+  } else {
+    headers = { Authorization: getAuthHeaders().Authorization };
+  }
   const res = await fetch(`${API_URL}/${id}`, {
     method: "PUT",
+    headers,
+    body,
+  });
+  return res.json();
+}
+
+// Remove image from entry
+export async function removeImage(id) {
+  const res = await fetch(`${API_URL}/${id}/remove-image`, {
+    method: "PUT",
     headers: getAuthHeaders(),
-    body: JSON.stringify(entryData),
   });
   return res.json();
 }

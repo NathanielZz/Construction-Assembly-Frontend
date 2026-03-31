@@ -1,15 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 function SearchBar({ onSearch }) {
   const [query, setQuery] = useState("");
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSearch(query);
-  };
+  // Debounce search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      onSearch(query);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [query, onSearch]);
 
   return (
-    <form className="search-bar" onSubmit={handleSubmit}>
+    <form className="search-bar" onSubmit={e => e.preventDefault()}>
       <div className="form__group field search-field">
         <input
           type="text"
@@ -20,7 +23,6 @@ function SearchBar({ onSearch }) {
         />
         <label className="form__label">Search</label>
       </div>
-      <button type="submit" className="search-btn">Search</button>
     </form>
   );
 }

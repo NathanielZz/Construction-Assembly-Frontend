@@ -1,4 +1,46 @@
 /* ===========================
+   Pagination Styles
+   =========================== */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 24px;
+}
+
+.pagination button {
+  background: #fff;
+  color: #2596be;
+  border: 1px solid #2596be;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 16px;
+  cursor: pointer;
+  min-width: 32px;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+}
+
+.pagination button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination button.active,
+.pagination button[style*='font-weight: bold'] {
+  background: #2596be;
+  color: #fff;
+  border-color: #2596be;
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(38, 202, 239, 0.08);
+}
+
+.pagination button:hover:not([disabled]):not(.active) {
+  background: #e6f4fa;
+  color: #116399;
+  border-color: #38caef;
+}
+/* ===========================
    Global minimalist theme
    =========================== */
 body {
@@ -656,4 +698,33 @@ button {
 
 .reorder-buttons button:hover {
   background: #1d7aa0;
+}
+
+.download-btn {
+  background: #2596be;
+  color: #fff;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 6px;
+  font-size: 15px;
+  transition: background 0.2s;
+}
+.download-btn:hover {
+  background: #1d7aa0;
+}
+
+.close-modal {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 22px;
+  cursor: pointer;
+  margin-left: 8px;
+  padding: 0 8px;
+  transition: color 0.2s;
+}
+.close-modal:hover {
+  color: #2596be;
 }
