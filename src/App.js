@@ -23,18 +23,22 @@ function App() {
 
   const loadEntries = useCallback(async (cat = category) => {
     try {
-      const data = await getEntries(cat);
+      const data = await getEntries(cat, isAuthenticated);
       if (Array.isArray(data)) {
         setEntries(data);
       } else {
         setEntries([]);
-        alert(data.error || "Failed to load entries.");
+        if (data && data.error && isAuthenticated) {
+          alert(data.error || "Failed to load entries.");
+        }
       }
     } catch (err) {
       setEntries([]);
-      alert("Error loading entries: " + err.message);
+      if (isAuthenticated) {
+        alert("Error loading entries: " + err.message);
+      }
     }
-  }, [category]);
+  }, [category, isAuthenticated]);
 
   useEffect(() => {
     if (isAuthenticated) loadEntries();
@@ -71,9 +75,11 @@ function App() {
     }
   }, [loadEntries]);
 
-  if (!isAuthenticated) {
-    return <Login onLogin={() => setIsAuthenticated(true)} />;
-  }
+
+  // Show login modal if requested
+  const [showLogin, setShowLogin] = useState(false);
+
+  // Show gallery for all users, admin controls only if authenticated
 
   async function handleDelete(id) {
     await deleteEntry(id);
@@ -102,27 +108,51 @@ function App() {
     }
   }
 
+
+  // Only show login page if login modal is open and not authenticated
+  if (showLogin && !isAuthenticated) {
+    return (
+      <Login 
+        onLogin={() => { setIsAuthenticated(true); setShowLogin(false); }}
+        onBack={() => setShowLogin(false)}
+      />
+    );
+  }
+
   return (
     <div className="container">
-      <h1>Construction Assembly Logger</h1>
-      <p className="subtitle">Logging System for Construction Assembly Materials</p>
+      <div className="header-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
+        <div>
+          <h1 style={{ margin: 0 }}>Construction Assembly Logger</h1>
+          <p className="subtitle" style={{ margin: 0 }}>Logging System for Construction Assembly Materials</p>
+        </div>
+        <div>
+          {isAuthenticated ? (
+            <button className="register-btn" onClick={() => {
+              sessionStorage.removeItem("token");
+              setIsAuthenticated(false);
+            }}>Logout</button>
+          ) : (
+            <button className="register-btn" onClick={() => setShowLogin(true)}>Login</button>
+          )}
+        </div>
+      </div>
 
       <SearchBar onSearch={handleSearch} />
 
       <div className="top-actions">
         <Filters category={category} setCategory={setCategory} />
-        <button className="register-btn" onClick={() => setShowModal(true)}>
-          Register New Entry
-        </button>
+        {isAuthenticated && (
+          <button className="register-btn" onClick={() => setShowModal(true)}>
+            Register New Entry
+          </button>
+        )}
       </div>
 
       <ResultsGallery
         entries={entries}
-        onEdit={(entry) => {
-          setEditingEntry(entry);
-          setShowModal(true);
-        }}
-        onDelete={handleDelete}
+        onEdit={isAuthenticated ? (entry => { setEditingEntry(entry); setShowModal(true); }) : undefined}
+        onDelete={isAuthenticated ? handleDelete : undefined}
         selectedEntry={selectedEntry}
         setSelectedEntry={setSelectedEntry}
         showEdit={showEdit}
@@ -130,6 +160,7 @@ function App() {
         page={page}
         setPage={setPage}
         entriesPerPage={ENTRIES_PER_PAGE}
+        isAuthenticated={isAuthenticated}
       />
 
       {showModal && (

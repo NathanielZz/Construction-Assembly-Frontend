@@ -1,4 +1,5 @@
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/progress";
+const PUBLIC_API_URL = "http://localhost:5000/public/progress";
 
 // ✅ Helper for JSON requests
 function getAuthHeaders() {
@@ -9,11 +10,13 @@ function getAuthHeaders() {
   };
 }
 
-// ✅ Get entries
-export async function getEntries(category = "all") {
-  let url = API_URL;
+// ✅ Get entries (auto-detect guest or admin)
+export async function getEntries(category = "all", isAuthenticated = false) {
+  let url = isAuthenticated ? API_URL : PUBLIC_API_URL;
   if (category && category !== "all") url += `?category=${category}`;
-  const res = await fetch(url, { headers: getAuthHeaders() });
+  const res = isAuthenticated
+    ? await fetch(url, { headers: getAuthHeaders() })
+    : await fetch(url);
   return res.json();
 }
 

@@ -1,4 +1,22 @@
 /* ===========================
+   Header Row Alignment
+   =========================== */
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.header-row h1 {
+  margin: 0;
+}
+
+.header-row .subtitle {
+  margin: 0;
+}
+/* ===========================
    Pagination Styles
    =========================== */
 .pagination {
@@ -248,20 +266,36 @@ h1 {
    Modal
    =========================== */
 .modal-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.4);
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  background: rgba(0,0,0,0.04);
+  overflow: hidden !important;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+.modal-overlay {
+  backdrop-filter: blur(6px);
+  background: rgba(0,0,0,0.10) !important;
+}
+
 .modal {
+  max-width: 700px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
   background: #fff;
-  border-radius: 6px;
-  width: 600px;
-  max-width: 90%;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  border-radius: 10px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.13);
+  display: flex;
+  flex-direction: column;
+  padding: 32px 32px 28px 32px;
+  box-sizing: border-box;
 }
 
 .modal-header {
@@ -271,9 +305,9 @@ h1 {
 }
 
 .modal-body {
-  max-height: 70vh; /* scrollable */
-  overflow-y: auto;
-  padding: 18px;
+  /* Remove any overflow here to avoid double scroll */
+  overflow: visible !important;
+  padding: 0;
 }
 
 /* ===========================
@@ -701,30 +735,66 @@ button {
 }
 
 .download-btn {
-  background: #2596be;
+  background: linear-gradient(90deg, #2596be 60%, #38caef 100%);
   color: #fff;
   border: none;
-  padding: 6px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-right: 6px;
-  font-size: 15px;
-  transition: background 0.2s;
-}
-.download-btn:hover {
-  background: #1d7aa0;
-}
-
-.close-modal {
-  background: none;
-  border: none;
-  color: #888;
-  font-size: 22px;
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
   margin-left: 8px;
-  padding: 0 8px;
-  transition: color 0.2s;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(38, 150, 190, 0.13);
+  letter-spacing: 0.5px;
 }
-.close-modal:hover {
-  color: #2596be;
+
+.download-btn:disabled {
+  background: #b3e0f7;
+  color: #fff;
+  cursor: not-allowed;
+}
+
+.download-btn:hover:not(:disabled) {
+  background: linear-gradient(90deg, #116399 60%, #2596be 100%);
+  box-shadow: 0 4px 16px rgba(38, 150, 190, 0.18);
+}
+
+/* Modal overlay and modal fixes for single scroll (final) */
+.modal-overlay {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  background: rgba(0,0,0,0.04);
+  overflow: hidden !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  max-width: 700px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.13);
+  display: flex;
+  flex-direction: column;
+  padding: 32px 32px 28px 32px;
+  box-sizing: border-box;
+}
+
+.modal-body {
+  /* Remove any overflow here to avoid double scroll */
+  overflow: visible !important;
+  padding: 0;
+}
+
+body.modal-open {
+  overflow: hidden !important;
 }

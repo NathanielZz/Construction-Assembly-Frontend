@@ -1,6 +1,4 @@
-
-
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { removeImage } from "../api";
 
 
@@ -10,10 +8,55 @@ function EntryForm({ entry, onClose, onSave }) {
     entry || { category: "", title: "", items: [{ code: "", quantity: "", description: "" }], image: "" }
   );
   const [imageFile, setImageFile] = useState(null);
+  const [isDirty, setIsDirty] = useState(false);
   const [imagePreview, setImagePreview] = useState(entry?.image || "");
   const fileInputRef = useRef();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Detect changes to form fields
+  useEffect(() => {
+    setIsDirty(false);
+    // eslint-disable-next-line
+  }, [entry]);
+
+  useEffect(() => {
+    const orig = entry || { category: "", title: "", items: [{ code: "", quantity: "", description: "" }], image: "" };
+    if (
+      formData.category !== orig.category ||
+      formData.title !== orig.title ||
+      (formData.image !== orig.image) ||
+      formData.items.length !== orig.items.length ||
+      formData.items.some((item, i) => item.code !== (orig.items[i]?.code || "") || item.quantity !== (orig.items[i]?.quantity || "") || item.description !== (orig.items[i]?.description || "")) ||
+      imageFile
+    ) {
+      setIsDirty(true);
+    } else {
+      setIsDirty(false);
+    }
+  }, [formData, imageFile, entry]);
+
+  // Close on ESC key
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === "Escape") {
+        handleCancel();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  });
+
+  // Cancel logic
+  const handleCancel = () => {
+    if (!isDirty) {
+      onClose();
+      return;
+    }
+    if (window.confirm(entry ? "Cancel editing? Unsaved changes will be lost." : "Cancel entry registration? Unsaved data will be lost.")) {
+      onClose();
+    }
+  };
   const [itemErrors, setItemErrors] = useState([]);
 
 
@@ -60,6 +103,7 @@ function EntryForm({ entry, onClose, onSave }) {
 
 
   const handleRemoveImage = async () => {
+    if (!window.confirm("Remove the attached image?")) return;
     setImageFile(null);
     setImagePreview("");
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -80,6 +124,11 @@ function EntryForm({ entry, onClose, onSave }) {
 
   const removeItem = (idx) => {
     if (formData.items.length === 1) return; // Always keep at least one
+    const item = formData.items[idx];
+    const hasData = item.code || item.quantity || item.description;
+    if (hasData) {
+      if (!window.confirm("Are you sure you want to remove this material?")) return;
+    }
     const items = formData.items.filter((_, i) => i !== idx);
     setFormData({ ...formData, items });
     setItemErrors(itemErrors.filter((_, i) => i !== idx));
@@ -142,8 +191,14 @@ function EntryForm({ entry, onClose, onSave }) {
 
 
   return (
-    <div className="modal-overlay">
-      <div className="modal">
+    <div
+      className="modal-overlay"
+      style={{ overflow: 'hidden' }}
+      onClick={e => {
+        if (e.target.classList.contains('modal-overlay')) handleCancel();
+      }}
+    >
+      <div className="modal" style={{ maxWidth: 700, width: '100%', minWidth: 380, overflowX: 'visible' }}>
         <div className="modal-header">
           <h2>{entry ? "Edit Entry" : "Register New Entry"}</h2>
         </div>
@@ -191,7 +246,7 @@ function EntryForm({ entry, onClose, onSave }) {
             <div
               className="form__group field image-upload-area"
               onPaste={handleImagePaste}
-              style={{ position: 'relative', background: '#f7fbfd', border: '2px dashed #38caef', borderRadius: 8, padding: 16, marginBottom: 8, marginTop: 4 }}
+              style={{ position: 'relative', background: '#f7fbfd', border: '2px dashed #38caef', borderRadius: 8, padding: 16, marginBottom: 8, marginTop: 4, maxWidth: 260 }}
             >
               <label className="form__label" style={{ color: '#2596be', fontWeight: 500 }}>Image (optional)</label>
               <input
@@ -261,9 +316,45 @@ function EntryForm({ entry, onClose, onSave }) {
                   {itemErrors[idx]?.description && <div style={{ color: '#d00', fontSize: 12 }}>{itemErrors[idx].description}</div>}
                 </div>
 
-                <div className="reorder-buttons" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <button type="button" onClick={() => moveItem(idx, -1)} title="Move up">↑</button>
-                  <button type="button" onClick={() => moveItem(idx, 1)} title="Move down">↓</button>
+                <div className="reorder-buttons" style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', minWidth: 32 }}>
+                  <button
+                    type="button"
+                    onClick={() => moveItem(idx, -1)}
+                    title="Move up"
+                    style={{
+                      background: '#e6f4fa',
+                      color: '#2596be',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: 28,
+                      height: 28,
+                      fontWeight: 700,
+                      fontSize: 18,
+                      marginBottom: 2,
+                      cursor: 'pointer',
+                      boxShadow: '0 1px 4px rgba(38,202,239,0.10)',
+                      transition: 'background 0.2s, color 0.2s',
+                    }}
+                  >↑</button>
+                  <button
+                    type="button"
+                    onClick={() => moveItem(idx, 1)}
+                    title="Move down"
+                    style={{
+                      background: '#e6f4fa',
+                      color: '#2596be',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: 28,
+                      height: 28,
+                      fontWeight: 700,
+                      fontSize: 18,
+                      marginBottom: 2,
+                      cursor: 'pointer',
+                      boxShadow: '0 1px 4px rgba(38,202,239,0.10)',
+                      transition: 'background 0.2s, color 0.2s',
+                    }}
+                  >↓</button>
                   {formData.items.length > 1 && (
                     <button
                       type="button"
@@ -271,20 +362,39 @@ function EntryForm({ entry, onClose, onSave }) {
                       title="Remove material"
                       style={{
                         background: '#fff',
-                        color: '#d00',
-                        border: '1px solid #d00',
+                        color: '#fff',
+                        border: 'none',
                         borderRadius: '50%',
                         width: 28,
                         height: 28,
                         fontWeight: 'bold',
                         fontSize: 18,
-                        lineHeight: '24px',
-                        padding: 0,
                         marginTop: 2,
                         cursor: 'pointer',
-                        transition: 'background 0.2s, color 0.2s, border 0.2s',
+                        boxShadow: '0 1px 4px rgba(211,47,47,0.10)',
+                        position: 'relative',
+                        transition: 'background 0.2s, color 0.2s',
                       }}
-                    >×</button>
+                      className="remove-x-btn"
+                    >
+                      <span style={{
+                        display: 'block',
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #ff5252 60%, #d32f2f 100%)',
+                        color: '#fff',
+                        fontWeight: 900,
+                        fontSize: 18,
+                        lineHeight: '24px',
+                        textAlign: 'center',
+                        boxShadow: '0 2px 8px rgba(211,47,47,0.12)',
+                        margin: 'auto',
+                        position: 'absolute',
+                        left: 2,
+                        top: 2
+                      }}>×</span>
+                    </button>
                   )}
                 </div>
               </div>
@@ -294,9 +404,27 @@ function EntryForm({ entry, onClose, onSave }) {
               + Add Another Item
             </button>
 
-            <div className="form-actions">
-              <button type="submit" className="save-btn" disabled={submitting}>{submitting ? "Saving..." : "Save"}</button>
-              <button type="button" className="cancel-btn" onClick={onClose} disabled={submitting}>Cancel</button>
+            <div className="form-actions" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 18 }}>
+              <button
+                type="submit"
+                className="save-btn"
+                disabled={submitting}
+                onClick={e => {
+                  if (!window.confirm(entry ? "Save changes to this entry?" : "Save this new entry?")) {
+                    e.preventDefault();
+                  }
+                }}
+              >
+                {submitting ? "Saving..." : "Save"}
+              </button>
+              <button
+                type="button"
+                className="cancel-btn"
+                onClick={handleCancel}
+                disabled={submitting}
+              >
+                Cancel
+              </button>
             </div>
           </form>
         </div>
