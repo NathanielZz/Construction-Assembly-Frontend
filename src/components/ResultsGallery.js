@@ -31,7 +31,15 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
   const [downloadingId, setDownloadingId] = React.useState(null);
   const handleDownloadExcel = async (entry) => {
     setDownloadingId(entry._id);
-    const title = entry.title + (entry.category ? ` (${formatCategory(entry.category)})` : "");
+    // Compose title as "Title (Item Code | Category)"
+    let title = entry.title;
+    if (entry.items && entry.items[0] && entry.items[0].code && entry.category) {
+      title += ` (${entry.items[0].code} | ${formatCategory(entry.category)})`;
+    } else if (entry.items && entry.items[0] && entry.items[0].code) {
+      title += ` (${entry.items[0].code})`;
+    } else if (entry.category) {
+      title += ` (${formatCategory(entry.category)})`;
+    }
     const wsData = [
       [title, null],
       ["Description", "Quantity"],
