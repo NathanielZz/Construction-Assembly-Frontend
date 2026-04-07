@@ -7,8 +7,6 @@ function Filters({ category, setCategory, isAdmin }) {
   const [pendingCategories, setPendingCategories] = useState([]);
   const [deletedKeys, setDeletedKeys] = useState([]);
   const [showManageModal, setShowManageModal] = useState(false);
-  const [modalCategory, setModalCategory] = useState({ key: '', label: '' });
-  const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
   const [error, setError] = useState("");
 
   // Listen for global event to open Manage Categories from header
@@ -49,7 +47,7 @@ function Filters({ category, setCategory, isAdmin }) {
       setPendingCategories(categories.filter(c => c.key !== 'all'));
       setDeletedKeys([]);
     }
-  }, [showManageModal]);
+  }, [showManageModal, categories]);
 
   // DEBUG: Log categories to help diagnose why filters may not show
   useEffect(() => {
@@ -58,57 +56,7 @@ function Filters({ category, setCategory, isAdmin }) {
 
 
 
-  // Modal logic: add/edit/remove
-  const openAddModal = () => {
-    setModalCategory({ key: '', label: '' });
-    setModalMode('add');
-    setShowManageModal(true);
-    setError('');
-  };
-
-  const openEditModal = (cat) => {
-    setModalCategory({ key: cat.key, label: cat.label });
-    setModalMode('edit');
-    setShowManageModal(true);
-    setError('');
-  };
-
-  const closeModal = () => {
-    setShowManageModal(false);
-    setError('');
-  };
-
-  const handleModalChange = (field, value) => {
-    setModalCategory(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleModalSave = async () => {
-    const { key, label } = modalCategory;
-    if (!key.trim() || !label.trim()) {
-      setError('Both key and label are required.');
-      return;
-    }
-    if (modalMode === 'add') {
-      if (categories.some(c => c.key === key)) {
-        setError('Key must be unique.');
-        return;
-      }
-      const res = await addCategory({ key, label });
-      if (res && res.error) return setError(res.error);
-    } else if (modalMode === 'edit') {
-      const res = await editCategory(modalCategory.key, { newKey: key, label });
-      if (res && res.error) return setError(res.error);
-    }
-    closeModal();
-    loadCategories();
-  };
-
-  const handleDelete = async (cat) => {
-    if (!window.confirm('Delete this category?')) return;
-    const res = await deleteCategory(cat.key);
-    if (res && res.error) return setError(res.error);
-    loadCategories();
-  };
+  // (Unused modal logic functions removed to fix ESLint errors)
 
   return (
     <div className="filters" style={{ overflowX: 'auto', width: '100%', marginBottom: 8 }}>
