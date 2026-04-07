@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-// import { getCategories, addCategory, editCategory, deleteCategory } from "../api";
+import { addCategory, editCategory, deleteCategory } from "../api";
 
 
 function Filters({ category, setCategory, isAdmin }) {
