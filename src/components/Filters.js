@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getCategories, addCategory, editCategory, deleteCategory } from "../api";
+// import { getCategories, addCategory, editCategory, deleteCategory } from "../api";
 
 
 function Filters({ category, setCategory, isAdmin }) {
@@ -20,13 +20,12 @@ function Filters({ category, setCategory, isAdmin }) {
 
   const loadCategories = async () => {
     try {
-      const data = await getCategories();
+      const response = await fetch("/categories.json");
+      if (!response.ok) throw new Error("Network response was not ok");
+      const data = await response.json();
       if (Array.isArray(data)) {
         setCategories(data);
         setError("");
-      } else if (data && data.error) {
-        setCategories([]);
-        setError(data.error);
       } else {
         setCategories([]);
         setError("Failed to load categories");

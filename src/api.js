@@ -32,8 +32,6 @@ export async function deleteCategory(key) {
   return res.json();
 }
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/progress";
-// Always use this for guests (do not override with env)
-const PUBLIC_API_URL = "http://localhost:5000/public/progress";
 
 // ✅ Helper for JSON requests
 function getAuthHeaders() {
@@ -46,17 +44,14 @@ function getAuthHeaders() {
 
 // ✅ Get entries (auto-detect guest or admin)
 export async function getEntries(category = "all", isAuthenticated = false) {
-  // Always use PUBLIC_API_URL for guests, never override with env
-  let url = isAuthenticated ? API_URL : PUBLIC_API_URL;
+  let url = API_URL;
   if (category && category !== "all") url += `?category=${category}`;
+  const options = { };
   if (isAuthenticated) {
-    const res = await fetch(url, { headers: getAuthHeaders() });
-    return res.json();
-  } else {
-    // Always use the hardcoded public endpoint for guests
-    const res = await fetch(PUBLIC_API_URL + (category && category !== "all" ? `?category=${category}` : ""));
-    return res.json();
+    options.headers = getAuthHeaders();
   }
+  const res = await fetch(url, options);
+  return res.json();
 }
 
 // ✅ Search entries

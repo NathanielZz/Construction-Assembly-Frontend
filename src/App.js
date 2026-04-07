@@ -41,15 +41,13 @@ function App() {
   }, [category, isAuthenticated]);
 
   useEffect(() => {
-    if (isAuthenticated) loadEntries();
+    loadEntries();
   }, [isAuthenticated, loadEntries]);
 
   // Reload entries when category changes
   useEffect(() => {
-    if (isAuthenticated) {
-      loadEntries(category);
-      setPage(1); // Reset to first page on filter change
-    }
+    loadEntries(category);
+    setPage(1); // Reset to first page on filter change
     // eslint-disable-next-line
   }, [category]);
 
