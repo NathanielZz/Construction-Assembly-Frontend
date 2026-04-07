@@ -1,0 +1,7 @@
+[
+  { "key": "all", "label": "All" },
+  { "key": "singlePhase", "label": "Single Phase" },
+  { "key": "threePhase", "label": "Three Phase" },
+  { "key": "anchor", "label": "Anchor" },
+  { "key": "secondary", "label": "Secondary" }
+]

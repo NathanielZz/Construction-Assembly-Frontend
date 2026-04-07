@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import { removeImage } from "../api";
-
-
+import { removeImage, getCategories } from "../api";
 
 function EntryForm({ entry, onClose, onSave }) {
+    const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState(
     entry || { category: "", title: "", items: [{ code: "", quantity: "", description: "" }], image: "" }
   );
@@ -18,6 +17,24 @@ function EntryForm({ entry, onClose, onSave }) {
   useEffect(() => {
     setIsDirty(false);
     // eslint-disable-next-line
+  }, [entry]);
+
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const data = await getCategories();
+        if (Array.isArray(data)) {
+          // Sort by order, put 'all' first if present
+          const sorted = [...data].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+          setCategories(sorted);
+        } else {
+          setCategories([]);
+        }
+      } catch {
+        setCategories([]);
+      }
+    }
+    fetchCategories();
   }, [entry]);
 
   useEffect(() => {
@@ -219,10 +236,12 @@ function EntryForm({ entry, onClose, onSave }) {
                 required
               >
                 <option value="">Select category</option>
-                <option value="singlePhase">Single Phase</option>
-                <option value="threePhase">Three Phase</option>
-                <option value="anchor">Anchor</option>
-                <option value="secondary">Secondary</option>
+                {categories.filter(c => c.key === 'all').map(cat => (
+                  <option key={cat.key} value={cat.key}>{cat.label}</option>
+                ))}
+                {categories.filter(c => c.key !== 'all').map(cat => (
+                  <option key={cat.key} value={cat.key}>{cat.label}</option>
+                ))}
               </select>
               <label className="form__label">Category</label>
             </div>
@@ -316,85 +335,28 @@ function EntryForm({ entry, onClose, onSave }) {
                   {itemErrors[idx]?.description && <div style={{ color: '#d00', fontSize: 12 }}>{itemErrors[idx].description}</div>}
                 </div>
 
-                <div className="reorder-buttons" style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', minWidth: 32 }}>
+                <div style={{ display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center', minWidth: 32, marginTop: 8 }}>
                   <button
                     type="button"
-                    onClick={() => moveItem(idx, -1)}
                     title="Move up"
-                    style={{
-                      background: '#e6f4fa',
-                      color: '#2596be',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: 28,
-                      height: 28,
-                      fontWeight: 700,
-                      fontSize: 18,
-                      marginBottom: 2,
-                      cursor: 'pointer',
-                      boxShadow: '0 1px 4px rgba(38,202,239,0.10)',
-                      transition: 'background 0.2s, color 0.2s',
-                    }}
+                    style={{ color: '#888', background: 'none', border: 'none', cursor: idx === 0 ? 'not-allowed' : 'pointer', fontSize: 20, padding: 0, opacity: idx === 0 ? 0.4 : 1 }}
+                    disabled={idx === 0}
+                    onClick={() => moveItem(idx, -1)}
                   >↑</button>
                   <button
                     type="button"
-                    onClick={() => moveItem(idx, 1)}
                     title="Move down"
-                    style={{
-                      background: '#e6f4fa',
-                      color: '#2596be',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: 28,
-                      height: 28,
-                      fontWeight: 700,
-                      fontSize: 18,
-                      marginBottom: 2,
-                      cursor: 'pointer',
-                      boxShadow: '0 1px 4px rgba(38,202,239,0.10)',
-                      transition: 'background 0.2s, color 0.2s',
-                    }}
+                    style={{ color: '#888', background: 'none', border: 'none', cursor: idx === formData.items.length-1 ? 'not-allowed' : 'pointer', fontSize: 20, padding: 0, opacity: idx === formData.items.length-1 ? 0.4 : 1 }}
+                    disabled={idx === formData.items.length-1}
+                    onClick={() => moveItem(idx, 1)}
                   >↓</button>
                   {formData.items.length > 1 && (
                     <button
                       type="button"
-                      onClick={() => removeItem(idx)}
                       title="Remove material"
-                      style={{
-                        background: '#fff',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: 28,
-                        height: 28,
-                        fontWeight: 'bold',
-                        fontSize: 18,
-                        marginTop: 2,
-                        cursor: 'pointer',
-                        boxShadow: '0 1px 4px rgba(211,47,47,0.10)',
-                        position: 'relative',
-                        transition: 'background 0.2s, color 0.2s',
-                      }}
-                      className="remove-x-btn"
-                    >
-                      <span style={{
-                        display: 'block',
-                        width: 24,
-                        height: 24,
-                        borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #ff5252 60%, #d32f2f 100%)',
-                        color: '#fff',
-                        fontWeight: 900,
-                        fontSize: 18,
-                        lineHeight: '24px',
-                        textAlign: 'center',
-                        boxShadow: '0 2px 8px rgba(211,47,47,0.12)',
-                        margin: 'auto',
-                        position: 'absolute',
-                        left: 2,
-                        top: 2
-                      }}>×</span>
-                    </button>
+                      style={{ color: '#b00', background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, padding: 0, marginLeft: 2 }}
+                      onClick={() => removeItem(idx)}
+                    >×</button>
                   )}
                 </div>
               </div>

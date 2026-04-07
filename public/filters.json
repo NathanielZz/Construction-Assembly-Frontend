@@ -1,0 +1,13 @@
+[
+  {
+    "label": "Status",
+    "name": "status",
+    "type": "select",
+    "options": ["All", "Pending", "In Progress", "Completed"]
+  },
+  {
+    "label": "Date",
+    "name": "date",
+    "type": "date"
+  }
+]

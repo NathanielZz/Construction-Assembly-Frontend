@@ -44,7 +44,7 @@ function App() {
     if (isAuthenticated) loadEntries();
   }, [isAuthenticated, loadEntries]);
 
-  // Reload entries when filter changes
+  // Reload entries when category changes
   useEffect(() => {
     if (isAuthenticated) {
       loadEntries(category);
@@ -121,16 +121,33 @@ function App() {
 
   return (
     <div className="container">
+
       <div className="header-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
         <div>
           <h1 style={{ margin: 0 }}>Construction Assembly Logger</h1>
           <p className="subtitle" style={{ margin: 0 }}>Logging System for Construction Assembly Materials</p>
         </div>
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {isAuthenticated && (
+            <>
+              <button className="register-btn" style={{ marginRight: 6 }} onClick={() => setShowModal(true)}>
+                Register New Entry
+              </button>
+              <button className="manage-categories-btn" style={{ marginRight: 6 }} onClick={() => {
+                // Open manage categories modal via Filters ref event
+                const evt = new CustomEvent('openManageCategories');
+                window.dispatchEvent(evt);
+              }}>
+                Manage Categories
+              </button>
+            </>
+          )}
           {isAuthenticated ? (
-            <button className="register-btn" onClick={() => {
-              sessionStorage.removeItem("token");
-              setIsAuthenticated(false);
+            <button className="logout-btn" onClick={() => {
+              if (window.confirm('Are you sure you want to log out?')) {
+                sessionStorage.removeItem("token");
+                setIsAuthenticated(false);
+              }
             }}>Logout</button>
           ) : (
             <button className="register-btn" onClick={() => setShowLogin(true)}>Login</button>
@@ -141,12 +158,7 @@ function App() {
       <SearchBar onSearch={handleSearch} />
 
       <div className="top-actions">
-        <Filters category={category} setCategory={setCategory} />
-        {isAuthenticated && (
-          <button className="register-btn" onClick={() => setShowModal(true)}>
-            Register New Entry
-          </button>
-        )}
+        <Filters category={category} setCategory={setCategory} isAdmin={isAuthenticated} />
       </div>
 
       <ResultsGallery

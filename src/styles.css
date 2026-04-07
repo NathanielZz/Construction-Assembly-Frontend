@@ -122,8 +122,9 @@ h1 {
    Filters
    =========================== */
 .filters {
-  display: flex;
-  gap: 10px;
+  width: 100%;
+  overflow-x: auto;
+  margin-bottom: 8px;
 }
 
 .filter-btn {
@@ -149,6 +150,8 @@ h1 {
   margin-bottom: 20px;
 }
 
+
+/* Register New Entry: Teal */
 .register-btn {
   background: #2596be;
   color: #fff;
@@ -156,6 +159,38 @@ h1 {
   padding: 10px 16px;
   border-radius: 4px;
   cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.register-btn:hover {
+  background: #117a8b;
+}
+
+/* Manage Categories: Gray */
+.manage-categories-btn {
+  background: #6b7280;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.manage-categories-btn:hover {
+  background: #374151;
+}
+
+/* Logout: Red */
+.logout-btn {
+  background: #e11d48;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.logout-btn:hover {
+  background: #be123c;
 }
 
 /* ===========================
@@ -801,4 +836,322 @@ button {
 
 body.modal-open {
   overflow: hidden !important;
+}
+
+/* ===========================
+   Manage Categories Modal
+   =========================== */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(38, 202, 239, 0.18);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.modal-content {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(38,202,239,0.18);
+  padding: 32px 28px 24px 28px;
+  min-width: 340px;
+  max-width: 480px;
+  width: 100%;
+  animation: popIn 0.2s;
+}
+@keyframes popIn {
+  from { transform: scale(0.96); opacity: 0.7; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.manage-categories-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 18px;
+}
+.manage-categories-table th,
+.manage-categories-table td {
+  border: 1px solid #e0e0e0;
+  padding: 8px 10px;
+  font-size: 15px;
+}
+.manage-categories-table th {
+  background: #e6f4fa;
+  color: #2596be;
+  font-weight: 600;
+}
+.manage-categories-table input {
+  background: #f7fbfd;
+  border: 1.5px solid #b2e4f7;
+  border-radius: 4px;
+  font-size: 15px;
+  padding: 4px 6px;
+}
+.manage-categories-table button {
+  background: #fff;
+  color: #d32f2f;
+  border: 1.5px solid #d32f2f;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s, color 0.2s;
+}
+.manage-categories-table button:hover {
+  background: #d32f2f;
+  color: #fff;
+}
+
+/* Style the Manage Categories button */
+.add-category-btn {
+  background: #2596be;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 16px;
+  font-weight: 600;
+  font-size: 15px;
+  margin-left: 8px;
+  box-shadow: 0 2px 8px rgba(38,202,239,0.10);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.add-category-btn:hover {
+  background: #1d7aa0;
+}
+
+/* Style filter buttons for theme */
+.filter-btn {
+  background: #f7fbfd;
+  color: #2596be;
+  border: 1.5px solid #38caef;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 15px;
+  font-weight: 500;
+  margin-right: 4px;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+}
+.filter-btn.active {
+  background: linear-gradient(90deg, #38caef 60%, #2596be 100%);
+  color: #fff;
+  border: 1.5px solid #2596be;
+}
+.filter-btn:hover:not(.active) {
+  background: #e6f4fa;
+  color: #116399;
+  border: 1.5px solid #2596be;
+}
+
+/* Extra modal button styles for QOL */
+.modal-cancel-btn, .modal-save-btn {
+  background: #2596be;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  margin-left: 4px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.modal-cancel-btn:hover {
+  background: #e6f4fa;
+  color: #d32f2f;
+  border: 1.5px solid #d32f2f;
+}
+.modal-save-btn:hover {
+  background: #1d7aa0;
+}
+.modal-save-btn:disabled {
+  background: #b2e4f7;
+  color: #fff;
+  cursor: not-allowed;
+}
+.manage-categories-modal {
+  box-shadow: 0 8px 32px rgba(38,202,239,0.18), 0 1.5px 8px rgba(0,0,0,0.06);
+  border: none;
+  padding: 32px 28px 24px 28px;
+  border-radius: 12px;
+  background: #fff;
+  min-width: 340px;
+  max-width: 480px;
+  width: 100%;
+}
+
+.manage-categories-table th,
+.manage-categories-table td {
+  border: 1px solid #e0e0e0;
+  padding: 8px 10px;
+  font-size: 15px;
+}
+.manage-categories-table input {
+  background: #f7fbfd;
+  border: 2px solid #38caef;
+  border-radius: 4px;
+  font-size: 15px;
+  padding: 6px 8px;
+  transition: border-color 0.2s;
+}
+.manage-categories-table input:focus {
+  border-color: #2596be;
+  outline: none;
+}
+.manage-categories-table th {
+  background: #e6f4fa;
+  color: #2596be;
+  font-weight: 600;
+}
+.manage-categories-table tr {
+  background: #fff;
+}
+.manage-categories-table tr:nth-child(even) {
+  background: #f7fbfd;
+}
+.delete-category-btn {
+  background: #fff;
+  color: #d32f2f;
+  border: 1.5px solid #d32f2f;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.2s, color 0.2s;
+}
+.delete-category-btn:hover {
+  background: #d32f2f;
+  color: #fff;
+}
+
+/* Order up/down button styles for Manage Categories */
+.order-btn {
+  background: #e6f4fa;
+  color: #2596be;
+  border: 1.5px solid #b2e4f7;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 0;
+  transition: background 0.2s, color 0.2s;
+}
+.order-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.order-btn:hover:not(:disabled) {
+  background: #2596be;
+  color: #fff;
+}
+
+/* Green Save, Red Cancel for modal */
+.green-btn {
+  background: #43a047 !important;
+  color: #fff !important;
+  border: none !important;
+}
+.green-btn:hover {
+  background: #388e3c !important;
+}
+.red-btn {
+  background: #d32f2f !important;
+  color: #fff !important;
+  border: none !important;
+}
+.red-btn:hover {
+  background: #b71c1c !important;
+}
+
+/* X remove button for Manage Categories ordering (matches EntryForm) */
+.remove-x-btn {
+  background: #fff;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-weight: bold;
+  font-size: 18px;
+  margin-top: 2px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(211,47,47,0.10);
+  position: relative;
+  transition: background 0.2s, color 0.2s;
+  padding: 0;
+}
+.remove-x-btn span {
+  display: block;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff5252 60%, #d32f2f 100%);
+  color: #fff;
+  font-weight: 900;
+  font-size: 18px;
+  line-height: 24px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(211,47,47,0.12);
+  margin: auto;
+  position: absolute;
+  left: 2px;
+  top: 2px;
+}
+
+/* Add, Save, Cancel for Manage Categories (matches EntryForm) */
+.add-category-btn.entry-style {
+  background: #2596be;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 16px;
+  font-size: 15px;
+  font-weight: 400;
+  margin: 0 auto 18px auto;
+  display: block;
+  min-width: 180px;
+  box-shadow: 0 2px 8px rgba(38,202,239,0.10);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.add-category-btn.entry-style:hover {
+  background: #1d7aa0;
+}
+.save-btn.entry-style {
+  background: #43a047;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 16px;
+  font-size: 15px;
+  font-weight: 400;
+  min-width: 120px;
+  margin-right: auto;
+  transition: background 0.2s;
+}
+.save-btn.entry-style:hover {
+  background: #388e3c;
+}
+.cancel-btn.entry-style {
+  background: #d32f2f;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 16px;
+  font-size: 15px;
+  font-weight: 400;
+  min-width: 120px;
+  margin-left: auto;
+  transition: background 0.2s;
+}
+.cancel-btn.entry-style:hover {
+  background: #b71c1c;
 }

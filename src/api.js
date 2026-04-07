@@ -1,3 +1,36 @@
+// CATEGORY MANAGEMENT API
+const CATEGORY_API_URL = process.env.REACT_APP_CATEGORY_API_URL || "http://localhost:5000/categories";
+
+export async function getCategories() {
+  const res = await fetch(CATEGORY_API_URL, { headers: getAuthHeaders() });
+  return res.json();
+}
+
+export async function addCategory(category) {
+  const res = await fetch(CATEGORY_API_URL, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(category),
+  });
+  return res.json();
+}
+
+export async function editCategory(key, updates) {
+  const res = await fetch(`${CATEGORY_API_URL}/${key}`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(updates),
+  });
+  return res.json();
+}
+
+export async function deleteCategory(key) {
+  const res = await fetch(`${CATEGORY_API_URL}/${key}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+  return res.json();
+}
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/progress";
 // Always use this for guests (do not override with env)
 const PUBLIC_API_URL = "http://localhost:5000/public/progress";
