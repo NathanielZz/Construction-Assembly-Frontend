@@ -9,7 +9,6 @@ import ConfirmationDialog from "./ConfirmationDialog";
 function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedEntry, showEdit, setShowEdit, page, setPage, entriesPerPage, isAuthenticated, showHidden, setShowHidden, reloadEntries }) {
   // State for edit confirmation
   const [showEditConfirm, setShowEditConfirm] = useState(false);
-  const [pendingCloseEdit, setPendingCloseEdit] = useState(false);
   const editFormDirtyRef = useRef(false);
     const [actionLoading, setActionLoading] = useState(false);
     // Duplicate entry handler
