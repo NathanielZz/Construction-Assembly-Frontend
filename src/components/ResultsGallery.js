@@ -287,7 +287,6 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
             onClose={() => {
               if (editFormDirtyRef.current) {
                 setShowEditConfirm(true);
-                setPendingCloseEdit(true);
               } else {
                 setShowEdit(false);
               }
@@ -298,7 +297,6 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
               onClose={() => {
                 if (editFormDirtyRef.current) {
                   setShowEditConfirm(true);
-                  setPendingCloseEdit(true);
                 } else {
                   setShowEdit(false);
                 }
@@ -316,11 +314,9 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
             onConfirm={() => {
               setShowEdit(false);
               setShowEditConfirm(false);
-              setPendingCloseEdit(false);
             }}
             onCancel={() => {
               setShowEditConfirm(false);
-              setPendingCloseEdit(false);
             }}
           />
         </>
