@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { removeImage, getCategories } from "../api";
 
-function EntryForm({ entry, onClose, onSave }) {
+function EntryForm({ entry, onClose, onSave, setDirty }) {
     const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState(
     entry || { category: "", title: "", items: [{ code: "", quantity: "", description: "" }], image: "" }
@@ -39,19 +39,16 @@ function EntryForm({ entry, onClose, onSave }) {
 
   useEffect(() => {
     const orig = entry || { category: "", title: "", items: [{ code: "", quantity: "", description: "" }], image: "" };
-    if (
+    const dirty =
       formData.category !== orig.category ||
       formData.title !== orig.title ||
       (formData.image !== orig.image) ||
       formData.items.length !== orig.items.length ||
       formData.items.some((item, i) => item.code !== (orig.items[i]?.code || "") || item.quantity !== (orig.items[i]?.quantity || "") || item.description !== (orig.items[i]?.description || "")) ||
-      imageFile
-    ) {
-      setIsDirty(true);
-    } else {
-      setIsDirty(false);
-    }
-  }, [formData, imageFile, entry]);
+      imageFile;
+    setIsDirty(dirty);
+    if (setDirty) setDirty(dirty);
+  }, [formData, imageFile, entry, setDirty]);
 
   // Close on ESC key
   useEffect(() => {

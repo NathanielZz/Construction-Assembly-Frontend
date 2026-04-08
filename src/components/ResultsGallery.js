@@ -1,10 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Modal from "./Modal";
 import * as XLSX from "xlsx";
 import ImageZoomModal from "./ImageZoomModal";
 import { duplicateEntry, setEntryHidden } from "../api";
+import EntryForm from "./EntryForm";
+import ConfirmationDialog from "./ConfirmationDialog";
 
 function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedEntry, showEdit, setShowEdit, page, setPage, entriesPerPage, isAuthenticated, showHidden, setShowHidden, reloadEntries }) {
+  // State for edit confirmation
+  const [showEditConfirm, setShowEditConfirm] = useState(false);
+  const [pendingCloseEdit, setPendingCloseEdit] = useState(false);
+  const editFormDirtyRef = useRef(false);
     const [actionLoading, setActionLoading] = useState(false);
     // Duplicate entry handler
     const handleDuplicate = async (entry) => {
@@ -277,14 +283,48 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
       )}
 
       {currentEntry && showEdit && (
-        (() => {
-          if (typeof onEdit === "function") {
-            onEdit(currentEntry);
-            setShowEdit(false);
-            return null;
-          }
-          return null;
-        })()
+        <>
+          <Modal
+            onClose={() => {
+              if (editFormDirtyRef.current) {
+                setShowEditConfirm(true);
+                setPendingCloseEdit(true);
+              } else {
+                setShowEdit(false);
+              }
+            }}
+          >
+            <EntryForm
+              entry={currentEntry}
+              onClose={() => {
+                if (editFormDirtyRef.current) {
+                  setShowEditConfirm(true);
+                  setPendingCloseEdit(true);
+                } else {
+                  setShowEdit(false);
+                }
+              }}
+              onSave={(...args) => {
+                setShowEdit(false);
+                if (typeof reloadEntries === "function") reloadEntries();
+              }}
+              setDirty={val => (editFormDirtyRef.current = val)}
+            />
+          </Modal>
+          <ConfirmationDialog
+            open={showEditConfirm}
+            type="cancel"
+            onConfirm={() => {
+              setShowEdit(false);
+              setShowEditConfirm(false);
+              setPendingCloseEdit(false);
+            }}
+            onCancel={() => {
+              setShowEditConfirm(false);
+              setPendingCloseEdit(false);
+            }}
+          />
+        </>
       )}
     </div>
   );
