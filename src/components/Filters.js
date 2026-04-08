@@ -9,6 +9,7 @@ function Filters({ category, setCategory, isAdmin }) {
   const nextId = useRef(1);
   const [categories, setCategories] = useState([]);
   const [pendingCategories, setPendingCategories] = useState([]);
+  const [initialPending, setInitialPending] = useState([]); // for dirty check
   const [deletedKeys, setDeletedKeys] = useState([]);
   const [showManageModal, setShowManageModal] = useState(false);
   const [error, setError] = useState("");
@@ -50,11 +51,11 @@ function Filters({ category, setCategory, isAdmin }) {
   useEffect(() => {
     if (showManageModal) {
       // Add a unique _id to each pending category for React key
-      setPendingCategories(
-        categories
-          .filter(c => c.key !== 'all')
-          .map(c => ({ ...c, _id: c._id || `cat-${nextId.current++}` }))
-      );
+      const cats = categories
+        .filter(c => c.key !== 'all')
+        .map(c => ({ ...c, _id: c._id || `cat-${nextId.current++}` }));
+      setPendingCategories(cats);
+      setInitialPending(JSON.stringify(cats));
       setDeletedKeys([]);
     }
   }, [showManageModal, categories]);
@@ -77,7 +78,17 @@ function Filters({ category, setCategory, isAdmin }) {
       {showManageModal && (
         <div
           className="modal-overlay"
-          onClick={e => { if (e.target.classList.contains('modal-overlay')) setShowManageModal(false); }}
+          tabIndex={0}
+          onClick={e => {
+            if (e.target.classList.contains('modal-overlay')) {
+              // Check for unsaved changes
+              if (JSON.stringify(pendingCategories) !== initialPending) {
+                setShowConfirm({ type: 'cancel' });
+              } else {
+                setShowManageModal(false);
+              }
+            }
+          }}
         >
           <div
             className="modal-content manage-categories-modal"
@@ -86,7 +97,11 @@ function Filters({ category, setCategory, isAdmin }) {
             tabIndex={0}
             onKeyDown={e => {
               if (e.key === 'Escape') {
-                setShowConfirm({ type: 'cancel' });
+                if (JSON.stringify(pendingCategories) !== initialPending) {
+                  setShowConfirm({ type: 'cancel' });
+                } else {
+                  setShowManageModal(false);
+                }
               }
             }}
           >
@@ -163,17 +178,32 @@ function Filters({ category, setCategory, isAdmin }) {
                 <button
                   className="save-btn entry-style"
                   type="button"
-                  style={{ flex: 1, fontWeight: 600, fontSize: 16, padding: '12px 0', opacity: saving ? 0.7 : 1 }}
+                  style={{ flex: 1, fontWeight: 600, fontSize: 16, padding: '12px 0', opacity: saving ? 0.7 : 1, position: 'relative' }}
                   disabled={saving}
                   onClick={() => setShowConfirm({ type: 'save' })}
                 >
-                  Save
+                  {saving && (
+                    <span style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <svg width="18" height="18" viewBox="0 0 50 50" style={{ verticalAlign: 'middle' }}>
+                        <circle cx="25" cy="25" r="20" fill="none" stroke="#2596be" strokeWidth="5" strokeDasharray="31.4 31.4" strokeLinecap="round">
+                          <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
+                        </circle>
+                      </svg>
+                    </span>
+                  )}
+                  {saving ? "Saving..." : "Save"}
                 </button>
                 <button
                   className="cancel-btn entry-style"
                   type="button"
                   style={{ flex: 1, fontWeight: 600, fontSize: 16, padding: '12px 0', background: '#eee', color: '#444', border: 'none', borderRadius: 6 }}
-                  onClick={() => setShowConfirm({ type: 'cancel' })}
+                  onClick={() => {
+                    if (JSON.stringify(pendingCategories) !== initialPending) {
+                      setShowConfirm({ type: 'cancel' });
+                    } else {
+                      setShowManageModal(false);
+                    }
+                  }}
                 >
                   Cancel
                 </button>
