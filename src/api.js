@@ -42,15 +42,38 @@ function getAuthHeaders() {
   };
 }
 
-// ✅ Get entries (auto-detect guest or admin)
-export async function getEntries(category = "all", isAuthenticated = false) {
+
+// ✅ Get entries (auto-detect guest or admin, supports showHidden)
+export async function getEntries(category = "all", isAuthenticated = false, showHidden = false) {
   let url = API_URL;
-  if (category && category !== "all") url += `?category=${category}`;
+  const params = [];
+  if (category && category !== "all") params.push(`category=${encodeURIComponent(category)}`);
+  if (showHidden) params.push("showHidden=1");
+  if (params.length) url += `?${params.join("&")}`;
   const options = { };
   if (isAuthenticated) {
     options.headers = getAuthHeaders();
   }
   const res = await fetch(url, options);
+  return res.json();
+}
+
+// Duplicate entry
+export async function duplicateEntry(id) {
+  const res = await fetch(`${API_URL}/${id}/duplicate`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+  return res.json();
+}
+
+// Hide/unhide entry
+export async function setEntryHidden(id, hide = true) {
+  const res = await fetch(`${API_URL}/${id}/hide`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ hide })
+  });
   return res.json();
 }
 

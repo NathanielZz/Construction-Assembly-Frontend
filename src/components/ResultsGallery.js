@@ -1,9 +1,37 @@
-import React from "react";
+import React, { useState } from "react";
 import Modal from "./Modal";
 import * as XLSX from "xlsx";
 import ImageZoomModal from "./ImageZoomModal";
+import { duplicateEntry, setEntryHidden } from "../api";
 
-function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedEntry, showEdit, setShowEdit, page, setPage, entriesPerPage, isAuthenticated }) {
+function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedEntry, showEdit, setShowEdit, page, setPage, entriesPerPage, isAuthenticated, showHidden, setShowHidden, reloadEntries }) {
+    const [actionLoading, setActionLoading] = useState(false);
+    // Duplicate entry handler
+    const handleDuplicate = async (entry) => {
+      setActionLoading(true);
+      try {
+        await duplicateEntry(entry._id);
+        if (reloadEntries) reloadEntries();
+        alert("Card duplicated!");
+      } catch (e) {
+        alert("Failed to duplicate card.");
+      }
+      setActionLoading(false);
+    };
+
+    // Hide/unhide entry handler
+    const handleHide = async (entry, hide) => {
+      setActionLoading(true);
+      try {
+        await setEntryHidden(entry._id, hide);
+        if (reloadEntries) reloadEntries();
+        alert(hide ? "Card hidden!" : "Card unhidden!");
+        setSelectedEntry(null);
+      } catch (e) {
+        alert("Failed to update card visibility.");
+      }
+      setActionLoading(false);
+    };
   // Sort entries by most recent (createdAt descending), fallback to _id if no createdAt
   const sortedEntries = [...entries].sort((a, b) => {
     if (a.createdAt && b.createdAt) {
@@ -130,16 +158,23 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
         </div>
       )}
 
+
       {currentEntry && !showEdit && (
         <Modal onClose={() => setSelectedEntry(null)}>
           <div className="modal-header modal-actions" style={{gap: '8px', justifyContent: 'flex-end', alignItems: 'center'}}>
-            {isAuthenticated ? (
+            {isAuthenticated && (
               <>
-                <button className="edit-btn" onClick={() => setShowEdit(true)} title="Edit Entry">Edit</button>
-                <button className="delete-btn" onClick={() => handleDeleteClick(currentEntry._id)} title="Delete Entry">Delete</button>
+                <button className="edit-btn" onClick={() => setShowEdit(true)} title="Edit Entry" disabled={actionLoading}>Edit</button>
+                <button className="delete-btn" onClick={() => handleDeleteClick(currentEntry._id)} title="Delete Entry" disabled={actionLoading}>Delete</button>
+                <button className="duplicate-btn" onClick={() => handleDuplicate(currentEntry)} title="Duplicate Card" disabled={actionLoading}>Duplicate</button>
+                {currentEntry.hidden ? (
+                  <button className="hide-btn" style={{background:'#6b7280'}} onClick={() => handleHide(currentEntry, false)} disabled={actionLoading} title="Unhide Card">Unhide</button>
+                ) : (
+                  <button className="hide-btn" style={{background:'#eab308'}} onClick={() => handleHide(currentEntry, true)} disabled={actionLoading} title="Hide Card">Hide</button>
+                )}
               </>
-            ) : null}
-            <button className="download-excel-btn" onClick={() => handleDownloadExcel(currentEntry)} title="Download" disabled={downloadingId === currentEntry._id}>
+            )}
+            <button className="download-excel-btn" onClick={() => handleDownloadExcel(currentEntry)} title="Download" disabled={downloadingId === currentEntry._id || actionLoading}>
               {downloadingId === currentEntry._id ? (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   <svg width="18" height="18" viewBox="0 0 50 50" style={{ verticalAlign: 'middle' }}>
@@ -175,8 +210,27 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
                 </li>
               ))}
             </ol>
+            {isAuthenticated && (
+              <div style={{marginTop:24}}>
+                <span style={{fontSize:13, color:'#888'}}>
+                  Card ID: {currentEntry._id}<br/>
+                  Status: {currentEntry.hidden ? <b style={{color:'#eab308'}}>Hidden</b> : <b style={{color:'#32CD32'}}>Visible</b>}
+                </span>
+              </div>
+            )}
           </div>
+
         </Modal>
+      )}
+
+      {/* Show hidden cards toggle for admins */}
+      {isAuthenticated && typeof setShowHidden === 'function' && (
+        <div style={{margin:'16px 0', textAlign:'right'}}>
+          <label style={{fontSize:14, color:'#444', cursor:'pointer'}}>
+            <input type="checkbox" checked={!!showHidden} onChange={e => setShowHidden(e.target.checked)} style={{marginRight:6}} />
+            Show hidden cards
+          </label>
+        </div>
       )}
 
       {zoomImage && (

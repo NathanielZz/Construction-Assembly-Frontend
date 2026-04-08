@@ -7,6 +7,7 @@ import EntryForm from "./components/EntryForm";
 import Login from "./login";
 import "./styles.css";
 
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
     !!sessionStorage.getItem("token")
@@ -18,12 +19,14 @@ function App() {
   const [selectedEntry, setSelectedEntry] = useState(null); // For gallery modal
   const [showEdit, setShowEdit] = useState(false); // For gallery edit mode
   const [page, setPage] = useState(1); // Pagination: current page
+  const [showHidden, setShowHidden] = useState(false); // Show hidden cards toggle
 
   const ENTRIES_PER_PAGE = 15;
 
-  const loadEntries = useCallback(async (cat = category) => {
+
+  const loadEntries = useCallback(async (cat = category, showH = showHidden) => {
     try {
-      const data = await getEntries(cat, isAuthenticated);
+      const data = await getEntries(cat, isAuthenticated, showH);
       if (Array.isArray(data)) {
         setEntries(data);
       } else {
@@ -38,18 +41,20 @@ function App() {
         alert("Error loading entries: " + err.message);
       }
     }
-  }, [category, isAuthenticated]);
+  }, [category, isAuthenticated, showHidden]);
+
 
   useEffect(() => {
     loadEntries();
   }, [isAuthenticated, loadEntries]);
 
   // Reload entries when category changes
+
   useEffect(() => {
-    loadEntries(category);
+    loadEntries(category, showHidden);
     setPage(1); // Reset to first page on filter change
     // eslint-disable-next-line
-  }, [category]);
+  }, [category, showHidden]);
 
   const handleSearch = useCallback(async (query) => {
     if (!query) {
@@ -159,6 +164,7 @@ function App() {
         <Filters category={category} setCategory={setCategory} isAdmin={isAuthenticated} />
       </div>
 
+
       <ResultsGallery
         entries={entries}
         onEdit={isAuthenticated ? (entry => { setEditingEntry(entry); setShowModal(true); }) : undefined}
@@ -171,6 +177,9 @@ function App() {
         setPage={setPage}
         entriesPerPage={ENTRIES_PER_PAGE}
         isAuthenticated={isAuthenticated}
+        showHidden={showHidden}
+        setShowHidden={setShowHidden}
+        reloadEntries={() => loadEntries(category, showHidden)}
       />
 
       {showModal && (
