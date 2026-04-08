@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import Modal from "./Modal";
 import * as XLSX from "xlsx";
 import ImageZoomModal from "./ImageZoomModal";
-import { duplicateEntry, setEntryHidden } from "../api";
+import { duplicateEntry, setEntryHidden, updateEntry } from "../api";
 import EntryForm from "./EntryForm";
 import ConfirmationDialog from "./ConfirmationDialog";
 
@@ -301,7 +301,9 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
                   setShowEdit(false);
                 }
               }}
-              onSave={(...args) => {
+              onSave={async (formData, hasImage) => {
+                // Save edited entry to backend
+                await updateEntry(currentEntry._id, formData);
                 setShowEdit(false);
                 if (typeof reloadEntries === "function") reloadEntries();
               }}
