@@ -50,10 +50,13 @@ function Filters({ category, setCategory, isAdmin }) {
   // When opening modal, copy categories to pendingCategories
   useEffect(() => {
     if (showManageModal) {
-      // Add a unique _id to each pending category for React key
-      const cats = categories
-        .filter(c => c.key !== 'all')
-        .map(c => ({ ...c, _id: c._id || `cat-${nextId.current++}` }));
+      // Always put 'All' category first and make it fixed
+      let cats = categories.map(c => ({ ...c, _id: c._id || `cat-${nextId.current++}` }));
+      const allIdx = cats.findIndex(c => c.key === 'all');
+      if (allIdx > 0) {
+        const [allCat] = cats.splice(allIdx, 1);
+        cats = [allCat, ...cats];
+      }
       setPendingCategories(cats);
       setInitialPending(JSON.stringify(cats));
       setDeletedKeys([]);
@@ -63,16 +66,25 @@ function Filters({ category, setCategory, isAdmin }) {
   return (
     <div className="filters" style={{ overflowX: 'auto', width: '100%', marginBottom: 8 }}>
       <div style={{ display: 'inline-flex', flexDirection: 'row', minWidth: 'fit-content', gap: 4, paddingBottom: 4 }}>
-        {Array.isArray(categories) && categories.length > 0 && categories.map((c) => (
-          <span key={c.key} style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <button
-              className={`filter-btn ${category === c.key ? "active" : ""}`}
-              onClick={() => setCategory(c.key)}
-            >
-              {c.label}
-            </button>
-          </span>
-        ))}
+        {Array.isArray(categories) && categories.length > 0 && (() => {
+          // Always render 'All' category first
+          const allIdx = categories.findIndex(c => c.key === 'all');
+          let ordered = categories;
+          if (allIdx > 0) {
+            const allCat = categories[allIdx];
+            ordered = [allCat, ...categories.slice(0, allIdx), ...categories.slice(allIdx + 1)];
+          }
+          return ordered.map((c) => (
+            <span key={c.key} style={{ display: 'inline-flex', alignItems: 'center' }}>
+              <button
+                className={`filter-btn ${category === c.key ? "active" : ""}`}
+                onClick={() => setCategory(c.key)}
+              >
+                {c.label}
+              </button>
+            </span>
+          ));
+        })()}
         {isAdmin && null}
       </div>
       {showManageModal && (
@@ -107,7 +119,7 @@ function Filters({ category, setCategory, isAdmin }) {
           >
             <h3 style={{marginTop:0,marginBottom:18}}>Manage Categories</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16, maxHeight: 320, overflowY: 'auto' }}>
-              {pendingCategories.map((cat, idx, arr) => (
+              {pendingCategories.filter(cat => cat.key !== 'all').map((cat, idx, arr) => (
                 <div key={cat._id || cat.key || idx} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input
                     placeholder="Key"
