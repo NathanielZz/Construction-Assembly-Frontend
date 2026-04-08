@@ -1,3 +1,9 @@
+/* Universal button pressed state for tactile feedback */
+button:active, .filter-btn:active, .add-item-btn:active, .register-btn:active, .manage-categories-btn:active, .logout-btn:active, .modal-save-btn:active, .modal-cancel-btn:active {
+  filter: brightness(0.93);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.18);
+  outline: none;
+}
 /* ===========================
    Header Row Alignment
    =========================== */
@@ -239,8 +245,7 @@ h1 {
   padding-bottom: 5px;
   font-weight: 600;
   border-width: 3px;
-  border-image: linear-gradient(to right, #116399, #38caef);
-  border-image-slice: 1;
+  border-color: #2596be;
 }
 
 .form__field:focus ~ .form__label {
@@ -825,7 +830,7 @@ input, select, textarea {
 }
 
 .download-btn {
-  background: linear-gradient(90deg, #2596be 60%, #38caef 100%);
+  background: #2596be;
   color: #fff;
   border: none;
   padding: 10px 20px;
@@ -848,8 +853,14 @@ input, select, textarea {
   cursor: not-allowed;
   opacity: 0.7;
 }
+
+.download-btn:active:not(:disabled) {
+  background: #16627a;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+  transform: translateY(1px) scale(0.98);
+}
 .download-btn:hover:not(:disabled) {
-  background: linear-gradient(90deg, #116399 60%, #2596be 100%);
+  background: #117a8b;
   box-shadow: 0 4px 16px rgba(38, 150, 190, 0.18);
   transform: translateY(-2px) scale(1.04);
 }
@@ -994,7 +1005,7 @@ body.modal-open {
   transition: background 0.2s, color 0.2s, border 0.2s;
 }
 .filter-btn.active {
-  background: linear-gradient(90deg, #38caef 60%, #2596be 100%);
+  background: #2596be;
   color: #fff;
   border: 1.5px solid #2596be;
 }
@@ -1148,7 +1159,7 @@ body.modal-open {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #ff5252 60%, #d32f2f 100%);
+  background: #d32f2f;
   color: #fff;
   font-weight: 900;
   font-size: 18px;

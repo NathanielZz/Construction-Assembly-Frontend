@@ -125,19 +125,19 @@ function App() {
   return (
     <div className="container">
 
-      <div className="header-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
-        <div>
-          <h1 style={{ margin: 0 }}>Construction Assembly Logger</h1>
-          <p className="subtitle" style={{ margin: 0 }}>Logging System for Construction Assembly Materials</p>
+
+      <div className="header-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 16, flexWrap: 'nowrap' }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <h1 style={{ margin: 0, fontSize: 28, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 600 }}>Construction Assembly Logger</h1>
+          <p className="subtitle" style={{ margin: 0, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Logging System for Construction Assembly Materials</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           {isAuthenticated && (
             <>
-              <button className="register-btn" style={{ marginRight: 6 }} onClick={() => setShowModal(true)}>
+              <button className="register-btn" style={{ marginRight: 2, padding: '6px 10px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => setShowModal(true)}>
                 Register New Entry
               </button>
-              <button className="manage-categories-btn" style={{ marginRight: 6 }} onClick={() => {
-                // Open manage categories modal via Filters ref event
+              <button className="manage-categories-btn" style={{ marginRight: 2, padding: '6px 10px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => {
                 const evt = new CustomEvent('openManageCategories');
                 window.dispatchEvent(evt);
               }}>
@@ -146,14 +146,14 @@ function App() {
             </>
           )}
           {isAuthenticated ? (
-            <button className="logout-btn" onClick={() => {
+            <button className="logout-btn" style={{ padding: '6px 10px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => {
               if (window.confirm('Are you sure you want to log out?')) {
                 sessionStorage.removeItem("token");
                 setIsAuthenticated(false);
               }
             }}>Logout</button>
           ) : (
-            <button className="register-btn" onClick={() => setShowLogin(true)}>Login</button>
+            <button className="register-btn" style={{ padding: '6px 10px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => setShowLogin(true)}>Login</button>
           )}
         </div>
       </div>

@@ -125,8 +125,30 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
     <div className="gallery">
       {entries.length === 0 && <p>No entries found.</p>}
 
+
       {paginatedEntries.map((entry) => (
-        <div key={entry._id} className="card">
+        <div key={entry._id} className="card" style={{position:'relative'}}>
+          {/* Hidden icon if showHidden is on and entry is hidden */}
+          {showHidden && entry.hidden && (
+            <span style={{
+              position: 'absolute',
+              top: 10,
+              right: 10,
+              zIndex: 2,
+              background: 'rgba(234,179,8,0.95)',
+              color: '#fff',
+              borderRadius: '50%',
+              width: 34,
+              height: 34,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(234,179,8,0.18)',
+              border: '2px solid #fff',
+            }} title="Hidden Card">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.81 21.81 0 0 1 2.06-3.06"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </span>
+          )}
           {entry.image && (
             <img src={entry.image} alt="Entry" style={{ width: "100%", maxHeight: 140, objectFit: "cover", borderRadius: 8, marginBottom: 8 }} />
           )}
@@ -159,22 +181,23 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
       )}
 
 
+
       {currentEntry && !showEdit && (
         <Modal onClose={() => setSelectedEntry(null)}>
-          <div className="modal-header modal-actions" style={{gap: '8px', justifyContent: 'flex-end', alignItems: 'center'}}>
+          <div className="modal-header modal-actions" style={{gap: '10px', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap'}}>
             {isAuthenticated && (
-              <>
-                <button className="edit-btn" onClick={() => setShowEdit(true)} title="Edit Entry" disabled={actionLoading}>Edit</button>
-                <button className="delete-btn" onClick={() => handleDeleteClick(currentEntry._id)} title="Delete Entry" disabled={actionLoading}>Delete</button>
-                <button className="duplicate-btn" onClick={() => handleDuplicate(currentEntry)} title="Duplicate Card" disabled={actionLoading}>Duplicate</button>
+              <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                <button className="edit-btn" style={{background:'#38caef',color:'#fff',border:'none',padding:'8px 14px',borderRadius:6,fontWeight:600,boxShadow:'0 2px 8px rgba(38,202,239,0.10)',transition:'background 0.2s'}} onClick={() => setShowEdit(true)} title="Edit Entry" disabled={actionLoading}>Edit</button>
+                <button className="delete-btn" style={{background:'#e11d48',color:'#fff',border:'none',padding:'8px 14px',borderRadius:6,fontWeight:600,boxShadow:'0 2px 8px rgba(225,29,72,0.10)',transition:'background 0.2s'}} onClick={() => handleDeleteClick(currentEntry._id)} title="Delete Entry" disabled={actionLoading}>Delete</button>
+                <button className="duplicate-btn" style={{background:'linear-gradient(90deg,#2596be 60%,#38caef 100%)',color:'#fff',border:'none',padding:'8px 14px',borderRadius:6,fontWeight:600,boxShadow:'0 2px 8px rgba(38,150,190,0.13)',transition:'background 0.2s'}} onClick={() => handleDuplicate(currentEntry)} title="Duplicate Card" disabled={actionLoading}>Duplicate</button>
                 {currentEntry.hidden ? (
-                  <button className="hide-btn" style={{background:'#6b7280'}} onClick={() => handleHide(currentEntry, false)} disabled={actionLoading} title="Unhide Card">Unhide</button>
+                  <button className="hide-btn" style={{background:'#6b7280',color:'#fff',border:'none',padding:'8px 14px',borderRadius:6,fontWeight:600,boxShadow:'0 2px 8px rgba(107,114,128,0.10)',transition:'background 0.2s'}} onClick={() => handleHide(currentEntry, false)} disabled={actionLoading} title="Unhide Card">Unhide</button>
                 ) : (
-                  <button className="hide-btn" style={{background:'#eab308'}} onClick={() => handleHide(currentEntry, true)} disabled={actionLoading} title="Hide Card">Hide</button>
+                  <button className="hide-btn" style={{background:'#eab308',color:'#fff',border:'none',padding:'8px 14px',borderRadius:6,fontWeight:600,boxShadow:'0 2px 8px rgba(234,179,8,0.10)',transition:'background 0.2s'}} onClick={() => handleHide(currentEntry, true)} disabled={actionLoading} title="Hide Card">Hide</button>
                 )}
-              </>
+              </div>
             )}
-            <button className="download-excel-btn" onClick={() => handleDownloadExcel(currentEntry)} title="Download" disabled={downloadingId === currentEntry._id || actionLoading}>
+            <button className="download-excel-btn" style={{background:'#fff',color:'#2596be',border:'1.5px solid #38caef',padding:'8px 14px',borderRadius:6,fontWeight:600,boxShadow:'0 2px 8px rgba(38,202,239,0.10)',transition:'background 0.2s'}} onClick={() => handleDownloadExcel(currentEntry)} title="Download" disabled={downloadingId === currentEntry._id || actionLoading}>
               {downloadingId === currentEntry._id ? (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   <svg width="18" height="18" viewBox="0 0 50 50" style={{ verticalAlign: 'middle' }}>
@@ -186,7 +209,7 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
                 </span>
               ) : "Download"}
             </button>
-            <button className="close-modal" onClick={() => setSelectedEntry(null)} title="Close">&times;</button>
+            <button className="close-modal" style={{background:'none',color:'#e11d48',border:'none',fontSize:28,fontWeight:700,marginLeft:6,cursor:'pointer',lineHeight:1}} onClick={() => setSelectedEntry(null)} title="Close">&times;</button>
           </div>
           <div className="modal-body">
             <h2 style={{marginTop:0}}>{currentEntry.title}</h2>
@@ -225,9 +248,25 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
 
       {/* Show hidden cards toggle for admins */}
       {isAuthenticated && typeof setShowHidden === 'function' && (
-        <div style={{margin:'16px 0', textAlign:'right'}}>
-          <label style={{fontSize:14, color:'#444', cursor:'pointer'}}>
-            <input type="checkbox" checked={!!showHidden} onChange={e => setShowHidden(e.target.checked)} style={{marginRight:6}} />
+        <div style={{margin:'18px 0', textAlign:'right'}}>
+          <label style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            background: '#f7fbfd',
+            border: '1.5px solid #38caef',
+            borderRadius: 24,
+            padding: '6px 18px 6px 10px',
+            fontSize: 15,
+            color: '#2596be',
+            fontWeight: 500,
+            boxShadow: '0 2px 8px rgba(38,202,239,0.10)',
+            cursor: 'pointer',
+            gap: 10
+          }}>
+            <span style={{marginRight: 8, fontWeight: 600}}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38caef" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </span>
+            <input type="checkbox" checked={!!showHidden} onChange={e => setShowHidden(e.target.checked)} style={{accentColor:'#38caef', width:22, height:22, marginRight:10}} />
             Show hidden cards
           </label>
         </div>
