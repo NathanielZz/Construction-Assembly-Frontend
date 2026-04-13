@@ -119,61 +119,65 @@ function Filters({ category, setCategory, isAdmin }) {
           >
             <h3 style={{marginTop:0,marginBottom:18}}>Manage Categories</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16, maxHeight: 320, overflowY: 'auto' }}>
-              {pendingCategories.filter(cat => cat.key !== 'all').map((cat, idx, arr) => (
-                <div key={cat._id || cat.key || idx} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input
-                    placeholder="Key"
-                    value={cat.key}
-                    onChange={e => {
-                      const newKey = e.target.value;
-                      setPendingCategories(prev => prev.map((c, i) => i === idx ? { ...c, key: newKey } : c));
-                    }}
-                    style={{ flex: 2, minWidth: 0, boxSizing: 'border-box', padding: 10, fontSize: 16, borderRadius: 5, border: '1px solid #ccc' }}
-                  />
-                  <input
-                    placeholder="Label"
-                    value={cat.label}
-                    onChange={e => {
-                      const newLabel = e.target.value;
-                      setPendingCategories(prev => prev.map((c, i) => i === idx ? { ...c, label: newLabel } : c));
-                    }}
-                    style={{ flex: 3, minWidth: 0, boxSizing: 'border-box', padding: 10, fontSize: 16, borderRadius: 5, border: '1px solid #ccc' }}
-                  />
-                  <button
-                    style={{ color: '#888', background: 'none', border: 'none', cursor: idx === 0 ? 'not-allowed' : 'pointer', fontSize: 20, padding: 0, opacity: idx === 0 ? 0.4 : 1 }}
-                    disabled={idx === 0}
-                    title="Move up"
-                    onClick={() => {
-                      if (idx === 0) return;
-                      setPendingCategories(prev => {
-                        const arr = [...prev];
-                        [arr[idx-1], arr[idx]] = [arr[idx], arr[idx-1]];
-                        return arr;
-                      });
-                    }}
-                  >↑</button>
-                  <button
-                    style={{ color: '#888', background: 'none', border: 'none', cursor: idx === arr.length-1 ? 'not-allowed' : 'pointer', fontSize: 20, padding: 0, opacity: idx === arr.length-1 ? 0.4 : 1 }}
-                    disabled={idx === arr.length-1}
-                    title="Move down"
-                    onClick={() => {
-                      if (idx === arr.length-1) return;
-                      setPendingCategories(prev => {
-                        const arr = [...prev];
-                        [arr[idx+1], arr[idx]] = [arr[idx], arr[idx+1]];
-                        return arr;
-                      });
-                    }}
-                  >↓</button>
-                  <button
-                    style={{ color: '#b00', background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, padding: 0, marginLeft: 2 }}
-                    title="Remove"
-                    onClick={() => {
-                      setShowConfirm({ type: 'delete', payload: { idx, cat } });
-                    }}
-                  >×</button>
-                </div>
-              ))}
+              {pendingCategories.filter(cat => cat.key !== 'all').map((cat, idx, arr) => {
+                // Find the real index in pendingCategories
+                const realIdx = pendingCategories.findIndex(c => c._id === cat._id);
+                return (
+                  <div key={cat._id || cat.key || idx} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input
+                      placeholder="Key"
+                      value={cat.key}
+                      onChange={e => {
+                        const newKey = e.target.value;
+                        setPendingCategories(prev => prev.map((c, i) => i === realIdx ? { ...c, key: newKey } : c));
+                      }}
+                      style={{ flex: 2, minWidth: 0, boxSizing: 'border-box', padding: 10, fontSize: 16, borderRadius: 5, border: '1px solid #ccc' }}
+                    />
+                    <input
+                      placeholder="Label"
+                      value={cat.label}
+                      onChange={e => {
+                        const newLabel = e.target.value;
+                        setPendingCategories(prev => prev.map((c, i) => i === realIdx ? { ...c, label: newLabel } : c));
+                      }}
+                      style={{ flex: 3, minWidth: 0, boxSizing: 'border-box', padding: 10, fontSize: 16, borderRadius: 5, border: '1px solid #ccc' }}
+                    />
+                    <button
+                      style={{ color: '#888', background: 'none', border: 'none', cursor: realIdx === 0 ? 'not-allowed' : 'pointer', fontSize: 20, padding: 0, opacity: realIdx === 0 ? 0.4 : 1 }}
+                      disabled={realIdx === 0}
+                      title="Move up"
+                      onClick={() => {
+                        if (realIdx === 0) return;
+                        setPendingCategories(prev => {
+                          const arr = [...prev];
+                          [arr[realIdx-1], arr[realIdx]] = [arr[realIdx], arr[realIdx-1]];
+                          return arr;
+                        });
+                      }}
+                    >↑</button>
+                    <button
+                      style={{ color: '#888', background: 'none', border: 'none', cursor: realIdx === pendingCategories.length-1 ? 'not-allowed' : 'pointer', fontSize: 20, padding: 0, opacity: realIdx === pendingCategories.length-1 ? 0.4 : 1 }}
+                      disabled={realIdx === pendingCategories.length-1}
+                      title="Move down"
+                      onClick={() => {
+                        if (realIdx === pendingCategories.length-1) return;
+                        setPendingCategories(prev => {
+                          const arr = [...prev];
+                          [arr[realIdx+1], arr[realIdx]] = [arr[realIdx], arr[realIdx+1]];
+                          return arr;
+                        });
+                      }}
+                    >↓</button>
+                    <button
+                      style={{ color: '#b00', background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, padding: 0, marginLeft: 2 }}
+                      title="Remove"
+                      onClick={() => {
+                        setShowConfirm({ type: 'delete', payload: { idx: realIdx, cat } });
+                      }}
+                    >×</button>
+                  </div>
+                );
+              })}
             </div>
             {error && <div style={{ color: 'red', marginBottom: 8 }}>{error}</div>}
             <div style={{ position: 'sticky', left: 0, bottom: 0, width: '100%', background: '#fff', padding: 0, marginTop: 'auto', zIndex: 2 }}>

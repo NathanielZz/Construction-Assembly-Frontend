@@ -127,12 +127,12 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
   const [zoomImage, setZoomImage] = React.useState(null);
 
   return (
-    <div className="gallery">
+    <div className="gallery" style={{ minHeight: '70vh', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', justifyContent: 'center', alignContent: 'flex-start', position: 'relative' }}>
       {entries.length === 0 && <p>No entries found.</p>}
 
 
       {paginatedEntries.map((entry) => (
-        <div key={entry._id} className="card" style={{position:'relative'}}>
+        <div key={entry._id} className="card" style={{position:'relative', minHeight: '220px'}}>
           {/* Hidden icon if showHidden is on and entry is hidden */}
           {showHidden && entry.hidden && (
             <span style={{
@@ -169,19 +169,98 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
       ))}
 
       {/* Pagination controls */}
-      {totalPages > 1 && (
-        <div className="pagination" style={{ marginTop: 24, display: 'flex', justifyContent: 'center', gap: 8 }}>
-          <button onClick={() => setPage(page - 1)} disabled={page === 1}>&lt;</button>
-          {Array.from({ length: totalPages }, (_, i) => (
+      {(totalPages > 1 || true) && (
+        <div style={{ gridColumn: '1 / -1', width: '100%', margin: '32px 0 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          {totalPages > 1 && (
+            <div className="pagination" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 2, background: '#f7fbfd', borderRadius: 12, padding: '8px 12px', boxShadow: '0 2px 8px rgba(38,202,239,0.06)' }}>
+              <button onClick={() => setPage(page - 1)} disabled={page === 1}>&lt;</button>
+              {(() => {
+                const pages = [];
+                const maxShown = 5; // Show current, 2 before and 2 after
+                if (totalPages <= 7) {
+                  for (let i = 1; i <= totalPages; i++) {
+                    pages.push(i);
+                  }
+                } else {
+                  pages.push(1);
+                  if (page > 3) pages.push('ellipsis-prev');
+                  let start = Math.max(2, page - 1);
+                  let end = Math.min(totalPages - 1, page + 1);
+                  if (page <= 3) {
+                    end = 4;
+                  }
+                  if (page >= totalPages - 2) {
+                    start = totalPages - 3;
+                  }
+                  for (let i = start; i <= end; i++) {
+                    pages.push(i);
+                  }
+                  if (page < totalPages - 2) pages.push('ellipsis-next');
+                  pages.push(totalPages);
+                }
+                return pages.map((p, idx) => {
+                  if (p === 'ellipsis-prev' || p === 'ellipsis-next') {
+                    return <span key={p + idx} style={{ minWidth: 24, textAlign: 'center', color: '#aaa', fontWeight: 700, fontSize: 18, userSelect: 'none' }}>…</span>;
+                  }
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={page === p ? 'active' : ''}
+                      style={{ fontWeight: page === p ? 'bold' : 'normal', minWidth: 32, margin: '0 2px', borderRadius: 6 }}
+                    >
+                      {p}
+                    </button>
+                  );
+                });
+              })()}
+              <button onClick={() => setPage(page + 1)} disabled={page === totalPages}>&gt;</button>
+            </div>
+          )}
+          {/* Hidden cards toggle always visible, centered below pagination. Scrolls to top on change. */}
+          <div style={{ margin: '18px 0 0 0', textAlign: 'center', width: '100%', display: 'flex', justifyContent: 'center' }}>
+            <label style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              background: '#f7fbfd',
+              border: '1.5px solid #38caef',
+              borderRadius: 24,
+              padding: '6px 18px 6px 10px',
+              fontSize: 15,
+              color: '#2596be',
+              fontWeight: 500,
+              boxShadow: '0 2px 8px rgba(38,202,239,0.10)',
+              cursor: 'pointer',
+              gap: 10,
+              zIndex: 10
+            }}>
+              <span style={{marginRight: 8, fontWeight: 600}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38caef" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+              </span>
+              <input type="checkbox" checked={!!showHidden} onChange={e => setShowHidden(e.target.checked)} style={{accentColor:'#38caef', width:22, height:22, marginRight:10}} />
+              Show hidden cards
+            </label>
+          </div>
+          {/* Go to Top button below hidden toggle */}
+          <div style={{ margin: '10px 0 0 0', textAlign: 'center', width: '100%', display: 'flex', justifyContent: 'center' }}>
             <button
-              key={i + 1}
-              onClick={() => setPage(i + 1)}
-              style={{ fontWeight: page === i + 1 ? 'bold' : 'normal', minWidth: 32 }}
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              style={{
+                background: '#2596be',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 24,
+                padding: '8px 24px',
+                fontSize: 15,
+                fontWeight: 500,
+                boxShadow: '0 2px 8px rgba(38,202,239,0.10)',
+                cursor: 'pointer',
+                marginTop: 0
+              }}
             >
-              {i + 1}
+              Go to Top
             </button>
-          ))}
-          <button onClick={() => setPage(page + 1)} disabled={page === totalPages}>&gt;</button>
+          </div>
         </div>
       )}
 
@@ -241,7 +320,6 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
             {isAuthenticated && (
               <div style={{marginTop:24}}>
                 <span style={{fontSize:13, color:'#888'}}>
-                  Card ID: {currentEntry._id}<br/>
                   Status: {currentEntry.hidden ? <b style={{color:'#eab308'}}>Hidden</b> : <b style={{color:'#32CD32'}}>Visible</b>}
                 </span>
               </div>
@@ -252,30 +330,7 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
       )}
 
       {/* Show hidden cards toggle for admins */}
-      {isAuthenticated && typeof setShowHidden === 'function' && (
-        <div style={{margin:'18px 0', textAlign:'right'}}>
-          <label style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            background: '#f7fbfd',
-            border: '1.5px solid #38caef',
-            borderRadius: 24,
-            padding: '6px 18px 6px 10px',
-            fontSize: 15,
-            color: '#2596be',
-            fontWeight: 500,
-            boxShadow: '0 2px 8px rgba(38,202,239,0.10)',
-            cursor: 'pointer',
-            gap: 10
-          }}>
-            <span style={{marginRight: 8, fontWeight: 600}}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38caef" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-            </span>
-            <input type="checkbox" checked={!!showHidden} onChange={e => setShowHidden(e.target.checked)} style={{accentColor:'#38caef', width:22, height:22, marginRight:10}} />
-            Show hidden cards
-          </label>
-        </div>
-      )}
+
 
       {zoomImage && (
         <ImageZoomModal src={zoomImage} alt={currentEntry?.title || "Zoomed image"} onClose={() => setZoomImage(null)} />
