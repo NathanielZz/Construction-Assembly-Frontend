@@ -176,7 +176,7 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
               <button onClick={() => setPage(page - 1)} disabled={page === 1}>&lt;</button>
               {(() => {
                 const pages = [];
-                const maxShown = 5; // Show current, 2 before and 2 after
+                // Removed unused variable maxShown
                 if (totalPages <= 7) {
                   for (let i = 1; i <= totalPages; i++) {
                     pages.push(i);
