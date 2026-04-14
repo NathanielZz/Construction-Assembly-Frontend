@@ -41,7 +41,6 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
 
         // Prepare columns: each entry gets 2 columns (Description, Quantity), with a space column between entries
         let colOffset = 1;
-        const imagePromises = [];
         // Track where each image should be placed (row per entry)
         const imagePlacements = [];
         selectedEntries.forEach((entry, idx) => {
