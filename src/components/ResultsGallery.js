@@ -37,13 +37,12 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
       }
       setActionLoading(false);
     };
-  // Sort entries by most recent (createdAt descending), fallback to _id if no createdAt
+  // Sort entries alphabetically by title (case-insensitive)
   const sortedEntries = [...entries].sort((a, b) => {
-    if (a.createdAt && b.createdAt) {
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    }
-    // fallback: sort by _id (MongoDB ObjectId has timestamp)
-    return (b._id > a._id ? 1 : -1);
+    if (!a.title && !b.title) return 0;
+    if (!a.title) return 1;
+    if (!b.title) return -1;
+    return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
   });
 
   const handleDeleteClick = (id) => {
