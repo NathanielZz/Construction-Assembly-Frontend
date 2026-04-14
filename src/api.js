@@ -79,8 +79,11 @@ export async function setEntryHidden(id, hide = true) {
 
 // ✅ Search entries
 export async function searchEntries(query, filter = "title") {
+  const token = sessionStorage.getItem("token");
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(`${API_URL}/search?q=${encodeURIComponent(query)}&filter=${encodeURIComponent(filter)}`, {
-    headers: getAuthHeaders(),
+    headers,
   });
   return res.json();
 }
