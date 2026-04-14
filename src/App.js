@@ -146,17 +146,36 @@ function App() {
             </>
           )}
           {isAuthenticated ? (
-            <button className="logout-btn" style={{ padding: '6px 10px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => {
-              if (window.confirm('Are you sure you want to log out?')) {
-                sessionStorage.removeItem("token");
-                setIsAuthenticated(false);
-              }
-            }}>Logout</button>
+            <>
+              <button className="logout-btn" style={{ padding: '6px 10px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => {
+                if (window.confirm('Are you sure you want to log out?')) {
+                  sessionStorage.removeItem("token");
+                  setIsAuthenticated(false);
+                }
+              }}>Logout</button>
+              <button
+                style={{ background: 'none', border: 'none', padding: '6px', marginLeft: 2, cursor: 'pointer', fontSize: 22, color: '#2596be', display: 'flex', alignItems: 'center' }}
+                title="Refresh entries"
+                onClick={() => { loadEntries(); setPage(1); }}
+              >
+                <span role="img" aria-label="refresh">&#x21bb;</span>
+              </button>
+            </>
           ) : (
-            <button className="register-btn" style={{ padding: '6px 10px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => setShowLogin(true)}>Login</button>
+            <>
+              <button className="register-btn" style={{ padding: '6px 10px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => setShowLogin(true)}>Login</button>
+              <button
+                style={{ background: 'none', border: 'none', padding: '6px', marginLeft: 2, cursor: 'pointer', fontSize: 22, color: '#2596be', display: 'flex', alignItems: 'center' }}
+                title="Refresh entries"
+                onClick={() => { loadEntries(); setPage(1); }}
+              >
+                <span role="img" aria-label="refresh">&#x21bb;</span>
+              </button>
+            </>
           )}
         </div>
       </div>
+
 
       <SearchBar onSearch={handleSearch} />
 
