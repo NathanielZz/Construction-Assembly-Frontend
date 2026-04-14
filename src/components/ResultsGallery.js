@@ -10,6 +10,143 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
   // State for edit confirmation
   const [showEditConfirm, setShowEditConfirm] = useState(false);
   const editFormDirtyRef = useRef(false);
+  // Multi-select state
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [downloadingMulti, setDownloadingMulti] = useState(false);
+      // Toggle selection for a card
+      const handleSelectCard = (id) => {
+        setSelectedIds((prev) =>
+          prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]
+        );
+      };
+
+      // Select all visible cards
+      const handleSelectAll = () => {
+        const pageIds = paginatedEntries.map((e) => e._id);
+        setSelectedIds((prev) =>
+          pageIds.every((id) => prev.includes(id))
+            ? prev.filter((id) => !pageIds.includes(id))
+            : [...prev, ...pageIds.filter((id) => !prev.includes(id))]
+        );
+      };
+
+      // Download selected entries as one Excel file, side by side in one worksheet
+      const handleDownloadSelectedExcel = async () => {
+        setDownloadingMulti(true);
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("Selected Entries");
+        const selectedEntries = entries.filter((e) => selectedIds.includes(e._id));
+        // Find max items for row alignment
+        const maxItems = Math.max(...selectedEntries.map(e => (e.items?.length || 0)));
+
+        // Prepare columns: each entry gets 2 columns (Description, Quantity), with a space column between entries
+        let colOffset = 1;
+        const imagePromises = [];
+        // Track where each image should be placed (row per entry)
+        const imagePlacements = [];
+        selectedEntries.forEach((entry, idx) => {
+          // Title row: TITLE (CATEGORY) only
+          let title = entry.title;
+          if (entry.category) {
+            title += ` (${formatCategory(entry.category)})`;
+          }
+          worksheet.mergeCells(1, colOffset, 1, colOffset + 1);
+          worksheet.getCell(1, colOffset).value = title;
+          worksheet.getCell(1, colOffset).alignment = { horizontal: "center", vertical: "middle" };
+          worksheet.getCell(1, colOffset).font = { bold: true, size: 14 };
+          // Header row
+          worksheet.getCell(2, colOffset).value = "Description";
+          worksheet.getCell(2, colOffset).font = { bold: true };
+          worksheet.getCell(2, colOffset + 1).value = "Quantity";
+          worksheet.getCell(2, colOffset + 1).font = { bold: true };
+          worksheet.getCell(2, colOffset + 1).alignment = { horizontal: "center" };
+          // Data rows
+          for (let i = 0; i < maxItems; ++i) {
+            const item = entry.items?.[i];
+            worksheet.getCell(3 + i, colOffset).value = item ? item.description : "";
+            worksheet.getCell(3 + i, colOffset + 1).value = item ? item.quantity || "" : "";
+            worksheet.getCell(3 + i, colOffset + 1).alignment = { horizontal: "center" };
+          }
+          // Track where to put the image for this entry
+          imagePlacements.push({
+            entry,
+            colOffset,
+            imgRow: maxItems + 4 // row directly after the last data row (no extra space)
+          });
+          // Borders and column width
+          for (let r = 1; r <= maxItems + 2; ++r) {
+            for (let c = colOffset; c <= colOffset + 1; ++c) {
+              worksheet.getCell(r, c).border = {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                bottom: { style: "thin" },
+                right: { style: "thin" }
+              };
+            }
+          }
+          worksheet.getColumn(colOffset).width = Math.max(12, ...(entry.items || []).map(i => (i.description || "").length));
+          worksheet.getColumn(colOffset + 1).width = 10;
+
+          // Add image under the table if available
+          // Image will be placed after all columns are set (see below)
+
+          // Add a space column after each entry except the last
+          if (idx < selectedEntries.length - 1) {
+            colOffset += 3; // 2 for entry, 1 for space
+            worksheet.getColumn(colOffset - 1).width = 2;
+          } else {
+            colOffset += 2;
+          }
+        });
+
+        // Wait for all images to be fetched and embed them
+        await Promise.all(imagePlacements.map(async ({ entry, colOffset, imgRow }) => {
+          if (entry.image) {
+            try {
+              const res = await fetch(entry.image);
+              const blob = await res.blob();
+              const dataUrl = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+              });
+              const ext = entry.image.split('.').pop().toLowerCase();
+              const imageId = workbook.addImage({
+                base64: dataUrl.split(',')[1],
+                extension: ext === 'jpg' ? 'jpeg' : ext
+              });
+              worksheet.addImage(imageId, {
+                tl: { col: colOffset - 1, row: imgRow - 1 },
+                ext: { width: 160, height: 120 }
+              });
+            } catch (e) {
+              // Ignore image errors
+            }
+          }
+        }));
+        // Improved file name
+        let fileName = "Materials_Export_" + new Date().toISOString().slice(0,10);
+        if (selectedEntries.length === 1) {
+          fileName = `Materials_${selectedEntries[0].title.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0,10)}`;
+        } else if (selectedEntries.length > 1) {
+          fileName = `Materials_${selectedEntries[0].title.replace(/\s+/g, "_")}_and_more_${new Date().toISOString().slice(0,10)}`;
+        }
+        fileName += ".xlsx";
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+          a.remove();
+          setDownloadingMulti(false);
+        }, 1200);
+      };
     const [actionLoading, setActionLoading] = useState(false);
     // Duplicate entry handler
     const handleDuplicate = async (entry) => {
@@ -175,13 +312,42 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
 
   const [zoomImage, setZoomImage] = React.useState(null);
 
+
   return (
     <div className="gallery" style={{ minHeight: '70vh', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', justifyContent: 'center', alignContent: 'flex-start', position: 'relative' }}>
-      {entries.length === 0 && <p>No entries found.</p>}
+      {/* Multi-select controls */}
+      {entries.length > 0 && (
+        <div style={{ gridColumn: '1 / -1', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 16 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <input
+              type="checkbox"
+              checked={paginatedEntries.length > 0 && paginatedEntries.every(e => selectedIds.includes(e._id))}
+              onChange={handleSelectAll}
+              style={{ accentColor: '#38caef', width: 18, height: 18 }}
+            />
+            Select All
+          </label>
+          <button
+            onClick={handleDownloadSelectedExcel}
+            disabled={selectedIds.length === 0 || downloadingMulti}
+            style={{ background: '#38caef', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, fontWeight: 600, boxShadow: '0 2px 8px rgba(38,202,239,0.10)', transition: 'background 0.2s', opacity: selectedIds.length === 0 ? 0.6 : 1 }}
+          >
+            {downloadingMulti ? 'Downloading...' : `Download Selected to Excel (${selectedIds.length})`}
+          </button>
+        </div>
+      )}
 
 
       {paginatedEntries.map((entry) => (
         <div key={entry._id} className="card" style={{position:'relative', minHeight: '220px'}}>
+          {/* Multi-select checkbox */}
+          <input
+            type="checkbox"
+            checked={selectedIds.includes(entry._id)}
+            onChange={() => handleSelectCard(entry._id)}
+            style={{ position: 'absolute', top: 10, left: 10, zIndex: 3, accentColor: '#38caef', width: 18, height: 18 }}
+            title="Select card"
+          />
           {/* Hidden icon if showHidden is on and entry is hidden */}
           {showHidden && entry.hidden && (
             <span style={{
