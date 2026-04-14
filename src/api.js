@@ -78,8 +78,8 @@ export async function setEntryHidden(id, hide = true) {
 }
 
 // ✅ Search entries
-export async function searchEntries(query) {
-  const res = await fetch(`${API_URL}/search?q=${encodeURIComponent(query)}`, {
+export async function searchEntries(query, filter = "title") {
+  const res = await fetch(`${API_URL}/search?q=${encodeURIComponent(query)}&filter=${encodeURIComponent(filter)}`, {
     headers: getAuthHeaders(),
   });
   return res.json();

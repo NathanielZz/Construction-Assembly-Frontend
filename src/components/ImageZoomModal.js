@@ -44,10 +44,36 @@ function ImageZoomModal({ src, alt, onClose }) {
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', pointerEvents: 'none'
         }}
       >
-        <div style={{ marginBottom: 16, pointerEvents: 'auto' }}>
-          <button onClick={e => { e.stopPropagation(); setZoom(z => Math.min(z + 0.2, 5)); }} style={{ marginRight: 8 }}>Zoom In +</button>
+        <div style={{ marginBottom: 16, pointerEvents: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button onClick={e => { e.stopPropagation(); setZoom(z => Math.min(z + 0.2, 5)); }}>Zoom In +</button>
           <button onClick={e => { e.stopPropagation(); setZoom(z => Math.max(z - 0.2, 0.5)); }}>Zoom Out -</button>
-          <button onClick={e => { e.stopPropagation(); setZoom(1); setDrag({ x: 0, y: 0, startX: 0, startY: 0, dragging: false }); }} style={{ marginLeft: 8 }}>Reset</button>
+          <button onClick={e => { e.stopPropagation(); setZoom(1); setDrag({ x: 0, y: 0, startX: 0, startY: 0, dragging: false }); }}>Reset</button>
+          <button
+            type="button"
+            style={{ marginLeft: 8 }}
+            title="Download image"
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                const response = await fetch(src);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = alt ? `${alt.replace(/\s+/g, '_')}.jpg` : 'image.jpg';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                  window.URL.revokeObjectURL(url);
+                  a.remove();
+                }, 500);
+              } catch (err) {
+                alert('Failed to download image.');
+              }
+            }}
+          >
+            Download
+          </button>
         </div>
         <div
           style={{

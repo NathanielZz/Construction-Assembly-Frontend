@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import Modal from "./Modal";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import ImageZoomModal from "./ImageZoomModal";
 import { duplicateEntry, setEntryHidden, updateEntry } from "../api";
 import EntryForm from "./EntryForm";
@@ -64,6 +64,8 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
   const [downloadingId, setDownloadingId] = React.useState(null);
   const handleDownloadExcel = async (entry) => {
     setDownloadingId(entry._id);
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Materials");
     // Compose title as "Title (Item Code | Category)"
     let title = entry.title;
     if (entry.items && entry.items[0] && entry.items[0].code && entry.category) {
@@ -73,48 +75,96 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
     } else if (entry.category) {
       title += ` (${formatCategory(entry.category)})`;
     }
-    const wsData = [
-      [title, null],
-      ["Description", "Quantity"],
-      ...entry.items
-        .map(item => [item.description, item.quantity || ""])
-    ];
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    // Merge the first row
-    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }];
-    // Style: Center title/category
-    ws['A1'].s = {
-      alignment: { horizontal: "center", vertical: "center" },
-      font: { bold: true, sz: 14 }
-    };
-    // Style: Bold headers
-    ws['A2'].s = { font: { bold: true } };
-    ws['B2'].s = { font: { bold: true }, alignment: { horizontal: "center" } };
-    // Style: Center quantity column
-    for (let i = 3; i < wsData.length + 1; ++i) {
-      const cell = ws[`B${i}`];
-      if (cell) cell.s = { alignment: { horizontal: "center" } };
+    worksheet.addRow([title]);
+    worksheet.mergeCells("A1:B1");
+    worksheet.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
+    worksheet.getCell("A1").font = { bold: true, size: 14 };
+    worksheet.addRow(["Description", "Quantity"]);
+    worksheet.getCell("A2").font = { bold: true };
+    worksheet.getCell("B2").font = { bold: true };
+    worksheet.getCell("B2").alignment = { horizontal: "center" };
+    entry.items.forEach(item => {
+      worksheet.addRow([item.description, item.quantity || ""]);
+    });
+    // Center quantity column
+    for (let i = 3; i < entry.items.length + 3; ++i) {
+      worksheet.getCell(`B${i}`).alignment = { horizontal: "center" };
     }
     // Add borders to all cells
-    const borderStyle = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
-    const range = XLSX.utils.decode_range(ws['!ref']);
-    for (let R = range.s.r; R <= range.e.r; ++R) {
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
-        if (!ws[cellAddress]) continue;
-        ws[cellAddress].s = ws[cellAddress].s || {};
-        ws[cellAddress].s.border = borderStyle;
+    worksheet.eachRow({ includeEmpty: false }, function(row) {
+      row.eachCell({ includeEmpty: false }, function(cell) {
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" }
+        };
+      });
+    });
+    worksheet.columns = [
+      { width: Math.max(12, ...entry.items.map(i => (i.description || "").length)) },
+      { width: 10 }
+    ];
+    // Embed image if available
+    if (entry.image) {
+      try {
+        // Fetch image as blob and convert to base64
+        const response = await fetch(entry.image);
+        const blob = await response.blob();
+        // Get image dimensions
+        const img = new window.Image();
+        const imgUrl = URL.createObjectURL(blob);
+        const imgDims = await new Promise((resolve, reject) => {
+          img.onload = () => {
+            resolve({ width: img.naturalWidth, height: img.naturalHeight });
+            URL.revokeObjectURL(imgUrl);
+          };
+          img.onerror = reject;
+          img.src = imgUrl;
+        });
+        // Set fixed height for Excel image, scale width proportionally
+        const fixedHeight = 200; // px
+        let { width, height } = imgDims;
+        if (height !== fixedHeight) {
+          const ratio = fixedHeight / height;
+          width = Math.round(width * ratio);
+          height = fixedHeight;
+        }
+        // Convert to base64
+        const reader = new FileReader();
+        const base64 = await new Promise((resolve, reject) => {
+          reader.onloadend = () => resolve(reader.result.split(",")[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        const ext = entry.image.split('.').pop().toLowerCase();
+        const imageId = workbook.addImage({
+          base64: base64,
+          extension: ext === 'jpg' ? 'jpeg' : ext
+        });
+        worksheet.addImage(imageId, {
+          tl: { col: 2.2, row: 0.2 },
+          ext: { width, height }
+        });
+      } catch (err) {
+        // If image fails, just skip embedding
+        console.error('Failed to embed image in Excel:', err);
       }
     }
-    // Auto-width columns
-    ws['!cols'] = [
-      { wch: Math.max(12, ...entry.items.map(i => (i.description || "").length)) },
-      { wch: 10 }
-    ];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Materials");
-    XLSX.writeFile(wb, `${entry.title.replace(/\s+/g, "_")}_materials.xlsx`);
-    setTimeout(() => setDownloadingId(null), 1200);
+    // Download file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${entry.title.replace(/\s+/g, "_")}_materials.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url);
+      a.remove();
+      setDownloadingId(null);
+    }, 1200);
   };
 
   // Pagination logic

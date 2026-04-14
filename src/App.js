@@ -56,24 +56,24 @@ function App() {
     // eslint-disable-next-line
   }, [category, showHidden]);
 
-  const handleSearch = useCallback(async (query) => {
-    if (!query) {
+  const handleSearch = useCallback(async (searchObj) => {
+    // searchObj: { query, filter }
+    if (!searchObj || !searchObj.query) {
       loadEntries();
       setPage(1);
     } else {
       try {
-        const data = await searchEntries(query);
+        // Pass filter and query to backend search
+        const data = await searchEntries(searchObj.query, searchObj.filter);
         if (Array.isArray(data)) {
           setEntries(data);
         } else {
           setEntries([]);
-          // Optionally show alert: alert(data.error || "No results found.");
         }
         setPage(1);
       } catch (err) {
         setEntries([]);
         setPage(1);
-        // Optionally show alert: alert("Error searching entries: " + err.message);
       }
     }
   }, [loadEntries]);
