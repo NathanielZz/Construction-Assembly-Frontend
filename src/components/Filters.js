@@ -68,11 +68,15 @@ function Filters({ category, setCategory, isAdmin }) {
       <div style={{ display: 'inline-flex', flexDirection: 'row', minWidth: 'fit-content', gap: 4, paddingBottom: 4 }}>
         {Array.isArray(categories) && categories.length > 0 && (() => {
           // Always render 'All' category first
-          const allIdx = categories.findIndex(c => c.key === 'all');
-          let ordered = categories;
+          let filtered = categories;
+          if (!isAdmin) {
+            filtered = categories.filter(c => !c.hidden);
+          }
+          const allIdx = filtered.findIndex(c => c.key === 'all');
+          let ordered = filtered;
           if (allIdx > 0) {
-            const allCat = categories[allIdx];
-            ordered = [allCat, ...categories.slice(0, allIdx), ...categories.slice(allIdx + 1)];
+            const allCat = filtered[allIdx];
+            ordered = [allCat, ...filtered.slice(0, allIdx), ...filtered.slice(allIdx + 1)];
           }
           return ordered.map((c) => (
             <span key={c.key} style={{ display: 'inline-flex', alignItems: 'center' }}>
@@ -280,7 +284,7 @@ function Filters({ category, setCategory, isAdmin }) {
                           const res = await addCategory(cat);
                           if (res && res.error) { setError(res.error); setSaving(false); return; }
                         } else {
-                          const res = await editCategory(cat.key, { newKey: cat.key, label: cat.label, order: cat.order });
+                          const res = await editCategory(cat.key, { newKey: cat.key, label: cat.label, order: cat.order, hidden: !!cat.hidden });
                           if (res && res.error) { setError(res.error); setSaving(false); return; }
                         }
                       } catch (apiErr) {
