@@ -1,3 +1,12 @@
+// Bulk save all categories at once
+export async function bulkSaveCategories(categories) {
+  const res = await fetch(CATEGORY_API_URL + '/bulk-save', {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ categories })
+  });
+  return res.json();
+}
 // CATEGORY MANAGEMENT API
 const CATEGORY_API_URL = process.env.REACT_APP_CATEGORY_API_URL || "http://localhost:5000/categories";
 

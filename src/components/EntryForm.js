@@ -24,8 +24,8 @@ function EntryForm({ entry, onClose, onSave, setDirty }) {
       try {
         const data = await getCategories();
         if (Array.isArray(data)) {
-          // Sort by order, put 'all' first if present
-          const sorted = [...data].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+          // Sort by order, put 'all' first if present, filter out hidden
+          const sorted = [...data].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).filter(cat => !cat.hidden);
           setCategories(sorted);
         } else {
           setCategories([]);

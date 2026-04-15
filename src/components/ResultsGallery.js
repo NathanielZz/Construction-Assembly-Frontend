@@ -345,6 +345,12 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
       )}
 
 
+      {paginatedEntries.length === 0 && (
+        <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#888', fontSize: 18, marginTop: 40 }}>
+          No entries found.
+        </div>
+      )}
+
       {paginatedEntries.map((entry) => (
         <div key={entry._id} className="card" style={{position:'relative', minHeight: '220px'}}>
           {/* Hidden icon if showHidden is on and entry is hidden */}
@@ -381,6 +387,7 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
               type="checkbox"
               checked={selectedIds.includes(entry._id)}
               onClick={e => { e.stopPropagation(); handleSelectCard(entry._id); }}
+              readOnly
               className="card-checkbox"
               title="Select card"
               style={{margin:0}}

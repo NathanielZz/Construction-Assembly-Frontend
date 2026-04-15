@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
 import ConfirmationDialog from "./ConfirmationDialog";
-import { addCategory, editCategory, deleteCategory } from "../api";
 
 
 function Filters({ category, setCategory, isAdmin }) {
@@ -68,10 +67,7 @@ function Filters({ category, setCategory, isAdmin }) {
       <div style={{ display: 'inline-flex', flexDirection: 'row', minWidth: 'fit-content', gap: 4, paddingBottom: 4 }}>
         {Array.isArray(categories) && categories.length > 0 && (() => {
           // Always render 'All' category first
-          let filtered = categories;
-          if (!isAdmin) {
-            filtered = categories.filter(c => !c.hidden);
-          }
+          let filtered = categories.filter(c => !c.hidden);
           const allIdx = filtered.findIndex(c => c.key === 'all');
           let ordered = filtered;
           if (allIdx > 0) {
@@ -275,33 +271,12 @@ function Filters({ category, setCategory, isAdmin }) {
                       setSaving(false);
                       return;
                     }
-                    // Save: upsert all, delete removed
-                    for (let i = 0; i < pendingCategories.length; ++i) {
-                      const cat = { ...pendingCategories[i], order: i };
-                      const orig = categories.find(c => c.key === cat.key);
-                      try {
-                        if (!orig) {
-                          const res = await addCategory(cat);
-                          if (res && res.error) { setError(res.error); setSaving(false); return; }
-                        } else {
-                          const res = await editCategory(cat.key, { newKey: cat.key, label: cat.label, order: cat.order, hidden: !!cat.hidden });
-                          if (res && res.error) { setError(res.error); setSaving(false); return; }
-                        }
-                      } catch (apiErr) {
-                        setError(apiErr.message || 'Failed to save category.'); setSaving(false); return;
-                      }
-                    }
-                    // Delete removed
-                    for (const key of deletedKeys) {
-                      if (key && categories.find(c => c.key === key)) {
-                        try {
-                          const res = await deleteCategory(key);
-                          if (res && res.error) { setError(res.error); setSaving(false); return; }
-                        } catch (apiErr) {
-                          setError(apiErr.message || 'Failed to delete category.'); setSaving(false); return;
-                        }
-                      }
-                    }
+                    // Bulk save all categories (excluding deleted)
+                    const catsToSave = pendingCategories
+                      .filter(cat => !deletedKeys.includes(cat.key))
+                      .map((cat, i) => ({ ...cat, order: i }));
+                    const res = await import('../api').then(api => api.bulkSaveCategories(catsToSave));
+                    if (res && res.error) { setError(res.error); setSaving(false); return; }
                     setShowManageModal(false);
                     loadCategories();
                   } catch (err) {
