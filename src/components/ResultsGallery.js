@@ -10,8 +10,7 @@ import EntryForm from "./EntryForm";
 function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedEntry, showEdit, setShowEdit, page, setPage, entriesPerPage, isAuthenticated, showHidden, setShowHidden, reloadEntries }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogPayload, setDialogPayload] = useState(null);
-  // State for edit confirmation
-  const [showEditConfirm, setShowEditConfirm] = useState(false);
+  // Removed unused showEditConfirm and setShowEditConfirm
   const editFormDirtyRef = useRef(false);
   // Multi-select state
   const [selectedIds, setSelectedIds] = useState([]);
@@ -150,11 +149,19 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
         }, 1200);
       };
     const [actionLoading, setActionLoading] = useState(false);
-    // Duplicate entry handler
-    const handleDuplicate = async (entry) => {
+
+    // Confirmation dialog state for duplicate/hide
+    const [confirmType, setConfirmType] = useState(null); // 'duplicate' | 'hide' | 'unhide'
+    const [pendingEntry, setPendingEntry] = useState(null);
+
+    const handleDuplicate = (entry) => {
+      setConfirmType('duplicate');
+      setPendingEntry(entry);
+    };
+    const confirmDuplicate = async () => {
       setActionLoading(true);
       try {
-        await duplicateEntry(entry._id);
+        await duplicateEntry(pendingEntry._id);
         if (reloadEntries) reloadEntries();
         setDialogPayload({ message: "Card duplicated!" });
         setDialogOpen(true);
@@ -163,15 +170,20 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
         setDialogOpen(true);
       }
       setActionLoading(false);
+      setConfirmType(null);
+      setPendingEntry(null);
     };
 
-    // Hide/unhide entry handler
-    const handleHide = async (entry, hide) => {
+    const handleHide = (entry, hide) => {
+      setConfirmType(hide ? 'hide' : 'unhide');
+      setPendingEntry({ ...entry, hide });
+    };
+    const confirmHide = async () => {
       setActionLoading(true);
       try {
-        await setEntryHidden(entry._id, hide);
+        await setEntryHidden(pendingEntry._id, pendingEntry.hide);
         if (reloadEntries) reloadEntries();
-        setDialogPayload({ message: hide ? "Card hidden!" : "Card unhidden!" });
+        setDialogPayload({ message: pendingEntry.hide ? "Card hidden!" : "Card unhidden!" });
         setDialogOpen(true);
         setSelectedEntry(null);
       } catch (e) {
@@ -179,6 +191,8 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
         setDialogOpen(true);
       }
       setActionLoading(false);
+      setConfirmType(null);
+      setPendingEntry(null);
     };
     <ConfirmationDialog
       open={dialogOpen}
@@ -512,6 +526,28 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
                 ) : (
                   <button className="hide-btn" style={{background:'#eab308',color:'#fff',border:'none',padding:'8px 14px',borderRadius:6,fontWeight:600,boxShadow:'0 2px 8px rgba(234,179,8,0.10)',transition:'background 0.2s'}} onClick={() => handleHide(currentEntry, true)} disabled={actionLoading} title="Hide Card">Hide</button>
                 )}
+                    {/* Confirmation Dialogs for Duplicate/Hide */}
+                    <ConfirmationDialog
+                      open={confirmType === 'duplicate'}
+                      type="custom"
+                      payload={{ message: 'Are you sure you want to duplicate this card?' }}
+                      onConfirm={confirmDuplicate}
+                      onCancel={() => { setConfirmType(null); setPendingEntry(null); }}
+                    />
+                    <ConfirmationDialog
+                      open={confirmType === 'hide'}
+                      type="custom"
+                      payload={{ message: 'Are you sure you want to hide this card?' }}
+                      onConfirm={confirmHide}
+                      onCancel={() => { setConfirmType(null); setPendingEntry(null); }}
+                    />
+                    <ConfirmationDialog
+                      open={confirmType === 'unhide'}
+                      type="custom"
+                      payload={{ message: 'Are you sure you want to unhide this card?' }}
+                      onConfirm={confirmHide}
+                      onCancel={() => { setConfirmType(null); setPendingEntry(null); }}
+                    />
               </div>
             )}
             <button className="download-excel-btn" style={{background:'#fff',color:'#2596be',border:'1.5px solid #38caef',padding:'8px 14px',borderRadius:6,fontWeight:600,boxShadow:'0 2px 8px rgba(38,202,239,0.10)',transition:'background 0.2s'}} onClick={() => handleDownloadExcel(currentEntry)} title="Download" disabled={downloadingId === currentEntry._id || actionLoading}>
@@ -570,46 +606,27 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
       )}
 
       {currentEntry && showEdit && (
-        <>
-          <Modal
+        <Modal
+          onClose={() => {
+            setShowEdit(false);
+            setSelectedEntry(null); // Reset to null so display reloads from entries
+          }}
+        >
+          <EntryForm
+            entry={currentEntry}
             onClose={() => {
-              if (editFormDirtyRef.current) {
-                setShowEditConfirm(true);
-              } else {
-                setShowEdit(false);
-              }
-            }}
-          >
-            <EntryForm
-              entry={currentEntry}
-              onClose={() => {
-                if (editFormDirtyRef.current) {
-                  setShowEditConfirm(true);
-                } else {
-                  setShowEdit(false);
-                }
-              }}
-              onSave={async (formData, hasImage) => {
-                // Save edited entry to backend
-                await updateEntry(currentEntry._id, formData);
-                setShowEdit(false);
-                if (typeof reloadEntries === "function") reloadEntries();
-              }}
-              setDirty={val => (editFormDirtyRef.current = val)}
-            />
-          </Modal>
-          <ConfirmationDialog
-            open={showEditConfirm}
-            type="cancel"
-            onConfirm={() => {
               setShowEdit(false);
-              setShowEditConfirm(false);
+              setSelectedEntry(null); // Reset to null so display reloads from entries
             }}
-            onCancel={() => {
-              setShowEditConfirm(false);
+            onSave={async (formData, hasImage) => {
+              // Save edited entry to backend
+              await updateEntry(currentEntry._id, formData);
+              setShowEdit(false);
+              if (typeof reloadEntries === "function") reloadEntries();
             }}
+            setDirty={val => (editFormDirtyRef.current = val)}
           />
-        </>
+        </Modal>
       )}
     </div>
   );

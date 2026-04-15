@@ -169,8 +169,8 @@ function App() {
                       payload={dialogPayload}
                       onConfirm={() => {
                         setDialogOpen(false);
-                        if (dialogCallback) {
-                          dialogCallback()();
+                        if (typeof dialogCallback === 'function') {
+                          dialogCallback();
                           setDialogCallback(null);
                         }
                       }}
