@@ -11,7 +11,8 @@ function Filters({ category, setCategory, isAdmin }) {
   const [initialPending, setInitialPending] = useState([]); // for dirty check
   const [deletedKeys, setDeletedKeys] = useState([]);
   const [showManageModal, setShowManageModal] = useState(false);
-  const [error, setError] = useState("");
+  // const [error, setError] = useState("");
+  const [showErrorDialog, setShowErrorDialog] = useState("");
   const [showConfirm, setShowConfirm] = useState({ type: null, payload: null });
 
   // Listen for global event to open Manage Categories from header
@@ -31,14 +32,13 @@ function Filters({ category, setCategory, isAdmin }) {
       const data = await response.json();
       if (Array.isArray(data)) {
         setCategories(data);
-        setError("");
       } else {
         setCategories([]);
-        setError("Failed to load categories");
+        setShowErrorDialog("Failed to load categories");
       }
     } catch (e) {
       setCategories([]);
-      setError("Failed to load categories");
+      setShowErrorDialog("Failed to load categories");
     }
   };
 
@@ -195,7 +195,14 @@ function Filters({ category, setCategory, isAdmin }) {
                 );
               })}
             </div>
-            {error && <div style={{ color: 'red', marginBottom: 8 }}>{error}</div>}
+            {/* Error dialog popup for consistency */}
+            <ConfirmationDialog
+              open={!!showErrorDialog}
+              type="error"
+              payload={{ message: showErrorDialog }}
+              onConfirm={() => setShowErrorDialog("")}
+              onCancel={() => setShowErrorDialog("")}
+            />
             <div style={{ position: 'sticky', left: 0, bottom: 0, width: '100%', background: '#fff', padding: 0, marginTop: 'auto', zIndex: 2 }}>
               <button className="add-category-btn entry-style" style={{ width: '100%', fontWeight: 600, fontSize: 16, padding: '12px 0', background: '#e6f4fa', color: '#2596be', border: 'none', borderRadius: 6, marginBottom: 12 }}
                 onClick={() => {
@@ -255,19 +262,18 @@ function Filters({ category, setCategory, isAdmin }) {
                   setShowConfirm({ type: null, payload: null });
                 } else if (showConfirm.type === 'save') {
                   setSaving(true);
-                  setError("");
                   setShowConfirm({ type: null, payload: null });
                   try {
                     // Validate
                     const keys = pendingCategories.map(c => c.key.trim());
                     const labels = pendingCategories.map(c => c.label.trim());
                     if (keys.includes('') || labels.includes('')) {
-                      setError('All keys and labels are required.');
+                      setShowErrorDialog('All keys and labels are required.');
                       setSaving(false);
                       return;
                     }
                     if (new Set(keys).size !== keys.length) {
-                      setError('Category keys must be unique.');
+                      setShowErrorDialog('Category keys must be unique.');
                       setSaving(false);
                       return;
                     }
@@ -276,11 +282,11 @@ function Filters({ category, setCategory, isAdmin }) {
                       .filter(cat => !deletedKeys.includes(cat.key))
                       .map((cat, i) => ({ ...cat, order: i }));
                     const res = await import('../api').then(api => api.bulkSaveCategories(catsToSave));
-                    if (res && res.error) { setError(res.error); setSaving(false); return; }
+                    if (res && res.error) { setShowErrorDialog(res.error); setSaving(false); return; }
                     setShowManageModal(false);
                     loadCategories();
                   } catch (err) {
-                    setError(err.message || 'Failed to save categories.');
+                    setShowErrorDialog(err.message || 'Failed to save categories.');
                   } finally {
                     setSaving(false);
                   }

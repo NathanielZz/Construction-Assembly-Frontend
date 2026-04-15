@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import ConfirmationDialog from "./components/ConfirmationDialog";
 import { getEntries, searchEntries, addEntry, updateEntry, deleteEntry } from "./api";
 import SearchBar from "./components/SearchBar";
 import Filters from "./components/Filters";
@@ -9,6 +10,12 @@ import "./styles.css";
 
 
 function App() {
+  // Confirmation dialog state (must be inside component)
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogType, setDialogType] = useState(null);
+  const [dialogPayload, setDialogPayload] = useState(null);
+  const [dialogCallback, setDialogCallback] = useState(null);
+
   const [isAuthenticated, setIsAuthenticated] = useState(
     !!sessionStorage.getItem("token")
   );
@@ -23,7 +30,6 @@ function App() {
 
   const ENTRIES_PER_PAGE = 15;
 
-
   const loadEntries = useCallback(async (cat = category, showH = showHidden) => {
     try {
       const data = await getEntries(cat, isAuthenticated, showH);
@@ -32,13 +38,17 @@ function App() {
       } else {
         setEntries([]);
         if (data && data.error && isAuthenticated) {
-          alert(data.error || "Failed to load entries.");
+          setDialogType("error");
+          setDialogPayload({ message: data.error || "Failed to load entries." });
+          setDialogOpen(true);
         }
       }
     } catch (err) {
       setEntries([]);
       if (isAuthenticated) {
-        alert("Error loading entries: " + err.message);
+        setDialogType("error");
+        setDialogPayload({ message: "Error loading entries: " + err.message });
+        setDialogOpen(true);
       }
     }
   }, [category, isAuthenticated, showHidden]);
@@ -91,15 +101,12 @@ function App() {
 
 
   async function handleSave(entryData) {
-    // Confirm before saving edits
+    // Only save, no confirmation here. Confirmation handled in EntryForm.
     if (editingEntry) {
-      const confirmed = window.confirm("Are you sure you want to save these edits?");
-      if (!confirmed) return;
       const updated = await updateEntry(editingEntry._id, entryData);
-      // Update entries list and selected entry for modal
       await loadEntries();
       setEditingEntry(updated);
-      setSelectedEntry(updated); // Update modal with new data
+      setSelectedEntry(updated);
       setShowModal(false);
       setEditingEntry(null);
       setShowEdit(false);
@@ -148,11 +155,30 @@ function App() {
           {isAuthenticated ? (
             <>
               <button className="logout-btn" style={{ padding: '6px 10px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => {
-                if (window.confirm('Are you sure you want to log out?')) {
+                setDialogType("cancel");
+                setDialogPayload({ message: "Are you sure you want to log out?" });
+                setDialogCallback(() => () => {
                   sessionStorage.removeItem("token");
                   setIsAuthenticated(false);
-                }
+                });
+                setDialogOpen(true);
               }}>Logout</button>
+                    <ConfirmationDialog
+                      open={dialogOpen}
+                      type={dialogType}
+                      payload={dialogPayload}
+                      onConfirm={() => {
+                        setDialogOpen(false);
+                        if (dialogCallback) {
+                          dialogCallback()();
+                          setDialogCallback(null);
+                        }
+                      }}
+                      onCancel={() => {
+                        setDialogOpen(false);
+                        setDialogCallback(null);
+                      }}
+                    />
               <button
                 style={{ background: 'none', border: 'none', padding: '6px', marginLeft: 2, cursor: 'pointer', fontSize: 22, color: '#2596be', display: 'flex', alignItems: 'center' }}
                 title="Refresh entries"
@@ -209,6 +235,7 @@ function App() {
             setEditingEntry(null);
           }}
           onSave={handleSave}
+          requireSaveConfirm={!!editingEntry}
         />
       )}
     </div>

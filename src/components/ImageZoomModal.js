@@ -1,6 +1,9 @@
 import React, { useState } from "react";
+import ConfirmationDialog from "./ConfirmationDialog";
 
 function ImageZoomModal({ src, alt, onClose }) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogPayload, setDialogPayload] = useState(null);
   const [zoom, setZoom] = useState(1);
   const [drag, setDrag] = useState({ x: 0, y: 0, startX: 0, startY: 0, dragging: false });
 
@@ -68,8 +71,16 @@ function ImageZoomModal({ src, alt, onClose }) {
                   a.remove();
                 }, 500);
               } catch (err) {
-                alert('Failed to download image.');
+                setDialogPayload({ message: 'Failed to download image.' });
+                setDialogOpen(true);
               }
+                  <ConfirmationDialog
+                    open={dialogOpen}
+                    type="error"
+                    payload={dialogPayload}
+                    onConfirm={() => setDialogOpen(false)}
+                    onCancel={() => setDialogOpen(false)}
+                  />
             }}
           >
             Download

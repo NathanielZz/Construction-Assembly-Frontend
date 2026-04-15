@@ -1,12 +1,15 @@
 import React, { useState, useRef } from "react";
+import ConfirmationDialog from "./ConfirmationDialog";
 import Modal from "./Modal";
 import ExcelJS from "exceljs";
 import ImageZoomModal from "./ImageZoomModal";
 import { duplicateEntry, setEntryHidden, updateEntry } from "../api";
 import EntryForm from "./EntryForm";
-import ConfirmationDialog from "./ConfirmationDialog";
+
 
 function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedEntry, showEdit, setShowEdit, page, setPage, entriesPerPage, isAuthenticated, showHidden, setShowHidden, reloadEntries }) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogPayload, setDialogPayload] = useState(null);
   // State for edit confirmation
   const [showEditConfirm, setShowEditConfirm] = useState(false);
   const editFormDirtyRef = useRef(false);
@@ -153,9 +156,11 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
       try {
         await duplicateEntry(entry._id);
         if (reloadEntries) reloadEntries();
-        alert("Card duplicated!");
+        setDialogPayload({ message: "Card duplicated!" });
+        setDialogOpen(true);
       } catch (e) {
-        alert("Failed to duplicate card.");
+        setDialogPayload({ message: "Failed to duplicate card." });
+        setDialogOpen(true);
       }
       setActionLoading(false);
     };
@@ -166,13 +171,22 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
       try {
         await setEntryHidden(entry._id, hide);
         if (reloadEntries) reloadEntries();
-        alert(hide ? "Card hidden!" : "Card unhidden!");
+        setDialogPayload({ message: hide ? "Card hidden!" : "Card unhidden!" });
+        setDialogOpen(true);
         setSelectedEntry(null);
       } catch (e) {
-        alert("Failed to update card visibility.");
+        setDialogPayload({ message: "Failed to update card visibility." });
+        setDialogOpen(true);
       }
       setActionLoading(false);
     };
+    <ConfirmationDialog
+      open={dialogOpen}
+      type="error"
+      payload={dialogPayload}
+      onConfirm={() => setDialogOpen(false)}
+      onCancel={() => setDialogOpen(false)}
+    />
   // Sort entries alphabetically by title (case-insensitive)
   const sortedEntries = [...entries].sort((a, b) => {
     if (!a.title && !b.title) return 0;
@@ -181,11 +195,15 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
     return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
   });
 
+  const [deleteId, setDeleteId] = useState(null);
   const handleDeleteClick = (id) => {
-    const confirmed = window.confirm("Are you sure you want to delete this entry?");
-    if (confirmed) {
-      onDelete(id);
+    setDeleteId(id);
+  };
+  const confirmDelete = () => {
+    if (deleteId) {
+      onDelete(deleteId);
       setSelectedEntry(null);
+      setDeleteId(null);
     }
   };
 
@@ -481,6 +499,13 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
               <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
                 <button className="edit-btn" style={{background:'#38caef',color:'#fff',border:'none',padding:'8px 14px',borderRadius:6,fontWeight:600,boxShadow:'0 2px 8px rgba(38,202,239,0.10)',transition:'background 0.2s'}} onClick={() => setShowEdit(true)} title="Edit Entry" disabled={actionLoading}>Edit</button>
                 <button className="delete-btn" style={{background:'#e11d48',color:'#fff',border:'none',padding:'8px 14px',borderRadius:6,fontWeight:600,boxShadow:'0 2px 8px rgba(225,29,72,0.10)',transition:'background 0.2s'}} onClick={() => handleDeleteClick(currentEntry._id)} title="Delete Entry" disabled={actionLoading}>Delete</button>
+                <ConfirmationDialog
+                  open={!!deleteId}
+                  type="delete"
+                  payload={{ cat: { label: 'this entry' } }}
+                  onConfirm={confirmDelete}
+                  onCancel={() => setDeleteId(null)}
+                />
                 <button className="duplicate-btn" style={{background:'linear-gradient(90deg,#2596be 60%,#38caef 100%)',color:'#fff',border:'none',padding:'8px 14px',borderRadius:6,fontWeight:600,boxShadow:'0 2px 8px rgba(38,150,190,0.13)',transition:'background 0.2s'}} onClick={() => handleDuplicate(currentEntry)} title="Duplicate Card" disabled={actionLoading}>Duplicate</button>
                 {currentEntry.hidden ? (
                   <button className="hide-btn" style={{background:'#6b7280',color:'#fff',border:'none',padding:'8px 14px',borderRadius:6,fontWeight:600,boxShadow:'0 2px 8px rgba(107,114,128,0.10)',transition:'background 0.2s'}} onClick={() => handleHide(currentEntry, false)} disabled={actionLoading} title="Unhide Card">Unhide</button>

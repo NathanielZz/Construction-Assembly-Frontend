@@ -1,8 +1,18 @@
 import React, { useState, useRef, useEffect } from "react";
 import { removeImage, getCategories } from "../api";
+import ConfirmationDialog from "./ConfirmationDialog";
 
-function EntryForm({ entry, onClose, onSave, setDirty }) {
-    const [categories, setCategories] = useState([]);
+function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
+      // Helper to reset form state to original entry
+      const resetFormState = () => {
+        setFormData(entry || { category: "", title: "", items: [{ code: "", quantity: "", description: "" }], image: "" });
+        setImageFile(null);
+        setImagePreview(entry?.image || "");
+        setItemErrors([]);
+      };
+    const [isClosed, setIsClosed] = useState(false);
+  const [categories, setCategories] = useState([]);
+    const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [formData, setFormData] = useState(
     entry || { category: "", title: "", items: [{ code: "", quantity: "", description: "" }], image: "" }
   );
@@ -61,15 +71,16 @@ function EntryForm({ entry, onClose, onSave, setDirty }) {
     return () => window.removeEventListener("keydown", handler);
   });
 
-  // Cancel logic
+  // Cancel logic with custom dialog
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const handleCancel = () => {
     if (!isDirty) {
+      resetFormState();
+      setIsClosed(true);
       onClose();
       return;
     }
-    if (window.confirm(entry ? "Cancel editing? Unsaved changes will be lost." : "Cancel entry registration? Unsaved data will be lost.")) {
-      onClose();
-    }
+    setShowCancelDialog(true);
   };
   const [itemErrors, setItemErrors] = useState([]);
 
@@ -116,12 +127,15 @@ function EntryForm({ entry, onClose, onSave, setDirty }) {
   // Remove image (frontend only, for new uploads)
 
 
+  const [showRemoveImageDialog, setShowRemoveImageDialog] = useState(false);
   const handleRemoveImage = async () => {
-    if (!window.confirm("Remove the attached image?")) return;
+    setShowRemoveImageDialog(true);
+  };
+  const confirmRemoveImage = async () => {
+    setShowRemoveImageDialog(false);
     setImageFile(null);
     setImagePreview("");
     if (fileInputRef.current) fileInputRef.current.value = "";
-    // If editing and entry had an image, call backend to remove
     if (entry && entry.image) {
       await removeImage(entry._id);
     }
@@ -136,16 +150,25 @@ function EntryForm({ entry, onClose, onSave, setDirty }) {
     setItemErrors([...itemErrors, {}]);
   };
 
+  const [removeIdx, setRemoveIdx] = useState(null);
   const removeItem = (idx) => {
     if (formData.items.length === 1) return; // Always keep at least one
     const item = formData.items[idx];
     const hasData = item.code || item.quantity || item.description;
     if (hasData) {
-      if (!window.confirm("Are you sure you want to remove this material?")) return;
+      setRemoveIdx(idx);
+      return;
     }
     const items = formData.items.filter((_, i) => i !== idx);
     setFormData({ ...formData, items });
     setItemErrors(itemErrors.filter((_, i) => i !== idx));
+  };
+  const confirmRemoveItem = () => {
+    if (removeIdx === null) return;
+    const items = formData.items.filter((_, i) => i !== removeIdx);
+    setFormData({ ...formData, items });
+    setItemErrors(itemErrors.filter((_, i) => i !== removeIdx));
+    setRemoveIdx(null);
   };
 
   const moveItem = (idx, direction) => {
@@ -158,7 +181,7 @@ function EntryForm({ entry, onClose, onSave, setDirty }) {
   };
 
 
-
+  // (removed duplicate showSaveDialog declaration)
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
@@ -176,13 +199,23 @@ function EntryForm({ entry, onClose, onSave, setDirty }) {
       setSubmitting(false);
       return;
     }
+    // If confirmation required, show dialog first
+    if (requireSaveConfirm) {
+      setShowSaveDialog(true);
+      setSubmitting(false);
+      return;
+    }
+    await actuallySave();
+  };
+
+  // Actually perform save
+  const actuallySave = async () => {
+    setSubmitting(true);
     try {
-      // Prepare items: treat empty quantity as undefined
       const cleanedItems = formData.items.map(item => ({
         ...item,
         quantity: item.quantity === "" ? undefined : item.quantity
       }));
-      // Use FormData for file upload
       const data = new FormData();
       data.append("category", formData.category);
       data.append("title", formData.title);
@@ -190,7 +223,7 @@ function EntryForm({ entry, onClose, onSave, setDirty }) {
       if (imageFile) {
         data.append("image", imageFile);
       }
-      await onSave(data, !!imageFile); // pass FormData and flag if image is present
+      await onSave(data, !!imageFile);
     } catch (err) {
       let msg = "An error occurred while saving. Please try again.";
       if (err && err.message) {
@@ -216,6 +249,18 @@ function EntryForm({ entry, onClose, onSave, setDirty }) {
         <div className="modal-header">
           <h2>{entry ? "Edit Entry" : "Register New Entry"}</h2>
         </div>
+        <ConfirmationDialog
+          open={showCancelDialog}
+          type="cancel"
+          onConfirm={() => { resetFormState(); setShowCancelDialog(false); setIsClosed(true); onClose(); }}
+          onCancel={() => setShowCancelDialog(false)}
+        />
+        <ConfirmationDialog
+          open={showSaveDialog}
+          type="save"
+          onConfirm={() => { setShowSaveDialog(false); actuallySave(); }}
+          onCancel={() => setShowSaveDialog(false)}
+        />
         <div className="modal-body">
           {error && (
             <div style={{ color: '#d00', background: '#fff0f0', padding: '10px', borderRadius: 4, marginBottom: 12, fontWeight: 500 }}>
@@ -231,6 +276,7 @@ function EntryForm({ entry, onClose, onSave, setDirty }) {
                 onChange={handleChange}
                 className="form__field"
                 required
+                disabled={isClosed}
               >
                 <option value="">Select category</option>
                 {categories.filter(c => c.key === 'all').map(cat => (
@@ -253,6 +299,7 @@ function EntryForm({ entry, onClose, onSave, setDirty }) {
                 className="form__field"
                 placeholder="Title"
                 required
+                disabled={isClosed}
               />
               <label className="form__label">Title</label>
             </div>
@@ -300,6 +347,7 @@ function EntryForm({ entry, onClose, onSave, setDirty }) {
                     onChange={(e) => handleChange(e, idx)}
                     className="form__field"
                     required
+                    disabled={isClosed}
                   />
                   <label className="form__label">Item Code *</label>
                   {itemErrors[idx]?.code && <div style={{ color: '#d00', fontSize: 12 }}>{itemErrors[idx].code}</div>}
@@ -314,6 +362,7 @@ function EntryForm({ entry, onClose, onSave, setDirty }) {
                     onChange={(e) => handleChange(e, idx)}
                     className="form__field"
                     min=""
+                    disabled={isClosed}
                   />
                   <label className="form__label">Quantity</label>
                 </div>
@@ -327,6 +376,7 @@ function EntryForm({ entry, onClose, onSave, setDirty }) {
                     onChange={(e) => handleChange(e, idx)}
                     className="form__field"
                     required
+                    disabled={isClosed}
                   />
                   <label className="form__label">Description *</label>
                   {itemErrors[idx]?.description && <div style={{ color: '#d00', fontSize: 12 }}>{itemErrors[idx].description}</div>}
@@ -337,14 +387,14 @@ function EntryForm({ entry, onClose, onSave, setDirty }) {
                     type="button"
                     title="Move up"
                     style={{ color: '#888', background: 'none', border: 'none', cursor: idx === 0 ? 'not-allowed' : 'pointer', fontSize: 20, padding: 0, opacity: idx === 0 ? 0.4 : 1 }}
-                    disabled={idx === 0}
+                    disabled={idx === 0 || isClosed}
                     onClick={() => moveItem(idx, -1)}
                   >↑</button>
                   <button
                     type="button"
                     title="Move down"
                     style={{ color: '#888', background: 'none', border: 'none', cursor: idx === formData.items.length-1 ? 'not-allowed' : 'pointer', fontSize: 20, padding: 0, opacity: idx === formData.items.length-1 ? 0.4 : 1 }}
-                    disabled={idx === formData.items.length-1}
+                    disabled={idx === formData.items.length-1 || isClosed}
                     onClick={() => moveItem(idx, 1)}
                   >↓</button>
                   {formData.items.length > 1 && (
@@ -353,29 +403,51 @@ function EntryForm({ entry, onClose, onSave, setDirty }) {
                       title="Remove material"
                       style={{ color: '#b00', background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, padding: 0, marginLeft: 2 }}
                       onClick={() => removeItem(idx)}
+                      disabled={isClosed}
                     >×</button>
                   )}
                 </div>
               </div>
             ))}
 
+
             <button type="button" className="add-item-btn" onClick={addItem}>
               + Add Another Item
             </button>
 
+            {/* Remove image confirmation dialog */}
+            <ConfirmationDialog
+              open={showRemoveImageDialog}
+              type="delete"
+              payload={{ cat: { label: 'the attached image' } }}
+              onConfirm={confirmRemoveImage}
+              onCancel={() => setShowRemoveImageDialog(false)}
+            />
+
+            {/* Remove item confirmation dialog */}
+            <ConfirmationDialog
+              open={removeIdx !== null}
+              type="delete"
+              payload={{ cat: { label: 'this material' } }}
+              onConfirm={confirmRemoveItem}
+              onCancel={() => setRemoveIdx(null)}
+            />
+
             <div className="form-actions" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 18 }}>
               <button
-                type="submit"
+                type="button"
                 className="save-btn"
                 disabled={submitting}
-                onClick={e => {
-                  if (!window.confirm(entry ? "Save changes to this entry?" : "Save this new entry?")) {
-                    e.preventDefault();
-                  }
-                }}
+                onClick={() => setShowSaveDialog(true)}
               >
                 {submitting ? "Saving..." : "Save"}
               </button>
+              <ConfirmationDialog
+                open={!!showSaveDialog}
+                type="save"
+                onConfirm={() => { setShowSaveDialog(false); document.querySelector('.entry-form').requestSubmit(); }}
+                onCancel={() => setShowSaveDialog(false)}
+              />
               <button
                 type="button"
                 className="cancel-btn"
