@@ -315,8 +315,9 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
   return (
     <div className="gallery" style={{ minHeight: '70vh', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', justifyContent: 'center', alignContent: 'flex-start', position: 'relative' }}>
       {/* Multi-select controls */}
+
       {entries.length > 0 && (
-        <div style={{ gridColumn: '1 / -1', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ gridColumn: '1 / -1', margin: 0, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input
               type="checkbox"
@@ -329,24 +330,23 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
           <button
             onClick={handleDownloadSelectedExcel}
             disabled={selectedIds.length === 0 || downloadingMulti}
-            style={{ background: '#38caef', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, fontWeight: 600, boxShadow: '0 2px 8px rgba(38,202,239,0.10)', transition: 'background 0.2s', opacity: selectedIds.length === 0 ? 0.6 : 1 }}
+            style={{ background: '#38caef', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: 5, fontWeight: 500, fontSize: 14, boxShadow: '0 2px 8px rgba(38,202,239,0.10)', transition: 'background 0.2s', opacity: selectedIds.length === 0 ? 0.6 : 1 }}
           >
             {downloadingMulti ? 'Downloading...' : `Download Selected to Excel (${selectedIds.length})`}
           </button>
+          <label style={{ display: 'inline-flex', alignItems: 'center', background: '#f7fbfd', border: '1.2px solid #38caef', borderRadius: 18, padding: '4px 12px 4px 8px', fontSize: 13, color: '#2596be', fontWeight: 500, boxShadow: '0 2px 8px rgba(38,202,239,0.08)', cursor: 'pointer', gap: 6, zIndex: 10, marginLeft: 'auto' }}>
+            <span style={{marginRight: 5, fontWeight: 600}}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38caef" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </span>
+            <input type="checkbox" checked={!!showHidden} onChange={e => setShowHidden(e.target.checked)} style={{accentColor:'#38caef', width:18, height:18, marginRight:6}} />
+            Show hidden cards
+          </label>
         </div>
       )}
 
 
       {paginatedEntries.map((entry) => (
         <div key={entry._id} className="card" style={{position:'relative', minHeight: '220px'}}>
-          {/* Multi-select checkbox */}
-          <input
-            type="checkbox"
-            checked={selectedIds.includes(entry._id)}
-            onChange={() => handleSelectCard(entry._id)}
-            style={{ position: 'absolute', top: 10, left: 10, zIndex: 3, accentColor: '#38caef', width: 18, height: 18 }}
-            title="Select card"
-          />
           {/* Hidden icon if showHidden is on and entry is hidden */}
           {showHidden && entry.hidden && (
             <span style={{
@@ -376,8 +376,18 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
             <p className="category">{formatCategory(entry.category)}</p>
           </div>
 
-          <button className="view-btn" onClick={() => { setSelectedEntry(entry); setShowEdit(false); }}>
-            View Details
+          <button className="view-btn" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10}}>
+            <input
+              type="checkbox"
+              checked={selectedIds.includes(entry._id)}
+              onClick={e => { e.stopPropagation(); handleSelectCard(entry._id); }}
+              className="card-checkbox"
+              title="Select card"
+              style={{margin:0}}
+            />
+            <span style={{flex:1,textAlign:'center'}} onClick={e => { e.stopPropagation(); setSelectedEntry(entry); setShowEdit(false); }}>
+              View Details
+            </span>
           </button>
         </div>
       ))}
@@ -431,30 +441,7 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
               <button onClick={() => setPage(page + 1)} disabled={page === totalPages}>&gt;</button>
             </div>
           )}
-          {/* Hidden cards toggle always visible, centered below pagination. Scrolls to top on change. */}
-          <div style={{ margin: '18px 0 0 0', textAlign: 'center', width: '100%', display: 'flex', justifyContent: 'center' }}>
-            <label style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              background: '#f7fbfd',
-              border: '1.5px solid #38caef',
-              borderRadius: 24,
-              padding: '6px 18px 6px 10px',
-              fontSize: 15,
-              color: '#2596be',
-              fontWeight: 500,
-              boxShadow: '0 2px 8px rgba(38,202,239,0.10)',
-              cursor: 'pointer',
-              gap: 10,
-              zIndex: 10
-            }}>
-              <span style={{marginRight: 8, fontWeight: 600}}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38caef" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-              </span>
-              <input type="checkbox" checked={!!showHidden} onChange={e => setShowHidden(e.target.checked)} style={{accentColor:'#38caef', width:22, height:22, marginRight:10}} />
-              Show hidden cards
-            </label>
-          </div>
+
           {/* Go to Top button below hidden toggle */}
           <div style={{ margin: '10px 0 0 0', textAlign: 'center', width: '100%', display: 'flex', justifyContent: 'center' }}>
             <button

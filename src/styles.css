@@ -1,3 +1,16 @@
+.card-content h3,
+.card-content .category {
+  padding-left: 8px;
+}
+
+
+
+.card-checkbox {
+  accent-color: #38caef;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
 @media (max-width: 1024px) {
   .header-row > div:last-child {
     width: 100% !important;
@@ -1054,17 +1067,21 @@ input, select, textarea {
 }
 
 .card-content {
-  padding: 12px;
+  margin: 0 0 1px;
 }
 
 .card-content h3 {
-  margin: 0 0 6px;
+  margin: 0 0 1px;
   font-size: 18px;
+  margin-top: 0;
+  margin-bottom: 10px;
 }
 
 .card-content .category {
   font-size: 14px;
   color: #666;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .view-btn {
@@ -1074,6 +1091,7 @@ input, select, textarea {
   padding: 10px;
   cursor: pointer;
   border-radius: 0 0 6px 6px;
+  margin-top: 10px;
 }
 
 .view-btn:hover {
