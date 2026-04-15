@@ -143,6 +143,22 @@ function Filters({ category, setCategory, isAdmin }) {
                       style={{ flex: 3, minWidth: 0, boxSizing: 'border-box', padding: 10, fontSize: 16, borderRadius: 5, border: '1px solid #ccc' }}
                     />
                     <button
+                      type="button"
+                      title={cat.hidden ? "Unhide category" : "Hide category"}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginRight: 4, fontSize: 20, color: cat.hidden ? '#b00' : '#888', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: '32px', width: '32px' }}
+                      onClick={() => {
+                        setPendingCategories(prev => prev.map((c, i) => i === realIdx ? { ...c, hidden: !cat.hidden } : c));
+                      }}
+                    >
+                      {cat.hidden ? (
+                        // Eye-off icon
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.81 21.81 0 0 1 2.06-3.06"/><path d="M1 1l22 22"/><path d="M1 12s4-7 11-7c2.5 0 4.71.66 6.63 1.76"/><path d="M12 12a3 3 0 0 1-3-3"/></svg>
+                      ) : (
+                        // Eye icon
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                      )}
+                    </button>
+                    <button
                       style={{ color: '#888', background: 'none', border: 'none', cursor: realIdx === 0 ? 'not-allowed' : 'pointer', fontSize: 20, padding: 0, opacity: realIdx === 0 ? 0.4 : 1 }}
                       disabled={realIdx === 0}
                       title="Move up"
