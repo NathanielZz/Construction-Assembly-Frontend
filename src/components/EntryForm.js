@@ -1,8 +1,23 @@
 import React, { useState, useRef, useEffect } from "react";
 import { removeImage, getCategories } from "../api";
+import { getMaterials } from "../materialsApi";
 import ConfirmationDialog from "./ConfirmationDialog";
 
 function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
+  // Materials state
+  const [materials, setMaterials] = useState([]);
+        // Fetch materials on mount
+        useEffect(() => {
+          async function fetchMaterials() {
+            try {
+              const data = await getMaterials();
+              setMaterials(data);
+            } catch {
+              setMaterials([]);
+            }
+          }
+          fetchMaterials();
+        }, []);
       // Helper to reset form state to original entry
       const resetFormState = () => {
         setFormData(entry || { category: "", title: "", items: [{ code: "", quantity: "", description: "" }], image: "" });
@@ -338,6 +353,8 @@ function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
             {/* Items Section */}
             {formData.items.map((item, idx) => (
               <div key={idx} className="item-row" style={{ alignItems: 'flex-start' }}>
+
+
                 <div className="form__group field code-field">
                   <input
                     type="text"
@@ -352,6 +369,8 @@ function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
                   <label className="form__label">Item Code *</label>
                   {itemErrors[idx]?.code && <div style={{ color: '#d00', fontSize: 12 }}>{itemErrors[idx].code}</div>}
                 </div>
+
+
 
                 <div className="form__group field quantity-field">
                   <input
@@ -371,6 +390,7 @@ function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
                   <input
                     type="text"
                     name="description"
+                    list={`material-desc-${idx}`}
                     placeholder="Description (required)"
                     value={item.description}
                     onChange={(e) => handleChange(e, idx)}
@@ -378,6 +398,11 @@ function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
                     required
                     disabled={isClosed}
                   />
+                  <datalist id={`material-desc-${idx}`}>
+                    {materials.map(mat => (
+                      <option key={mat.name} value={mat.name}>{mat.name}</option>
+                    ))}
+                  </datalist>
                   <label className="form__label">Description *</label>
                   {itemErrors[idx]?.description && <div style={{ color: '#d00', fontSize: 12 }}>{itemErrors[idx].description}</div>}
                 </div>

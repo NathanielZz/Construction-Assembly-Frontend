@@ -5,6 +5,7 @@ import SearchBar from "./components/SearchBar";
 import Filters from "./components/Filters";
 import ResultsGallery from "./components/ResultsGallery"; // ✅ using gallery view
 import EntryForm from "./components/EntryForm";
+import ManageDataDashboard from "./components/ManageDataDashboard";
 import Login from "./login";
 import "./styles.css";
 
@@ -27,6 +28,7 @@ function App() {
   const [showEdit, setShowEdit] = useState(false); // For gallery edit mode
   const [page, setPage] = useState(1); // Pagination: current page
   const [showHidden, setShowHidden] = useState(false); // Show hidden cards toggle
+  const [showManageData, setShowManageData] = useState(false); // Show manage data dashboard
 
   const ENTRIES_PER_PAGE = 15;
 
@@ -129,6 +131,10 @@ function App() {
     );
   }
 
+  if (showManageData) {
+    return <ManageDataDashboard onBack={() => setShowManageData(false)} />;
+  }
+
   return (
     <div className="container">
 
@@ -144,11 +150,8 @@ function App() {
               <button className="register-btn" style={{ marginRight: 2, padding: '6px 10px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => setShowModal(true)}>
                 Register New Entry
               </button>
-              <button className="manage-categories-btn" style={{ marginRight: 2, padding: '6px 10px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => {
-                const evt = new CustomEvent('openManageCategories');
-                window.dispatchEvent(evt);
-              }}>
-                Manage Categories
+              <button className="manage-data-btn" style={{ marginRight: 2, padding: '6px 10px', fontSize: 14, whiteSpace: 'nowrap' }} onClick={() => setShowManageData(true)}>
+                Manage Data
               </button>
             </>
           )}
