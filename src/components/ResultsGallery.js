@@ -10,26 +10,61 @@ import EntryForm from "./EntryForm";
 function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedEntry, showEdit, setShowEdit, page, setPage, entriesPerPage, isAuthenticated, showHidden, setShowHidden, reloadEntries }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogPayload, setDialogPayload] = useState(null);
+  // State for confirmation dialog when removing from Selection List
+  const [confirmRemoveId, setConfirmRemoveId] = useState(null);
+  // State for confirmation dialogs for download and cancel
+  const [confirmDownload, setConfirmDownload] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
   // Removed unused showEditConfirm and setShowEditConfirm
   const editFormDirtyRef = useRef(false);
   // Multi-select state
   const [selectedIds, setSelectedIds] = useState([]);
   const [downloadingMulti, setDownloadingMulti] = useState(false);
+  // Quantity state per entry (cart)
+  const [quantities, setQuantities] = useState({}); // { [entryId]: quantity }
+  const [showCart, setShowCart] = useState(false);
       // Toggle selection for a card
       const handleSelectCard = (id) => {
-        setSelectedIds((prev) =>
-          prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]
-        );
+        setSelectedIds((prev) => {
+          const newIds = prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id];
+          setShowCart(newIds.length > 0);
+          return newIds;
+        });
+        // If selecting, default quantity to 1 if not set
+        setQuantities(q => ({ ...q, [id]: q[id] || 1 }));
+      };
+
+      // Handle quantity change (in cart)
+      const handleQuantityChange = (id, value) => {
+        const qty = Math.max(1, parseInt(value) || 1);
+        setQuantities(q => ({ ...q, [id]: qty }));
+      };
+
+      // Remove from cart
+      const handleRemoveFromCart = (id) => {
+        setSelectedIds((prev) => {
+          const newIds = prev.filter((sid) => sid !== id);
+          setShowCart(newIds.length > 0);
+          return newIds;
+        });
+        setQuantities(q => {
+          const nq = { ...q };
+          delete nq[id];
+          return nq;
+        });
       };
 
       // Select all visible cards
       const handleSelectAll = () => {
         const pageIds = paginatedEntries.map((e) => e._id);
-        setSelectedIds((prev) =>
-          pageIds.every((id) => prev.includes(id))
+        setSelectedIds((prev) => {
+          const allSelected = pageIds.every((id) => prev.includes(id));
+          const newIds = allSelected
             ? prev.filter((id) => !pageIds.includes(id))
-            : [...prev, ...pageIds.filter((id) => !prev.includes(id))]
-        );
+            : [...prev, ...pageIds.filter((id) => !prev.includes(id))];
+          setShowCart(newIds.length > 0);
+          return newIds;
+        });
       };
 
       // Download selected entries as one Excel file, side by side in one worksheet
@@ -51,8 +86,9 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
           if (entry.category) {
             title += ` (${formatCategory(entry.category)})`;
           }
+          const qty = quantities[entry._id] || 1;
           worksheet.mergeCells(1, colOffset, 1, colOffset + 1);
-          worksheet.getCell(1, colOffset).value = title;
+          worksheet.getCell(1, colOffset).value = title + (qty > 1 ? ` (x${qty})` : "");
           worksheet.getCell(1, colOffset).alignment = { horizontal: "center", vertical: "middle" };
           worksheet.getCell(1, colOffset).font = { bold: true, size: 14 };
           // Header row
@@ -65,7 +101,7 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
           for (let i = 0; i < maxItems; ++i) {
             const item = entry.items?.[i];
             worksheet.getCell(3 + i, colOffset).value = item ? item.description : "";
-            worksheet.getCell(3 + i, colOffset + 1).value = item ? item.quantity || "" : "";
+            worksheet.getCell(3 + i, colOffset + 1).value = item ? (item.quantity ? (Number(item.quantity) * qty) : qty) : "";
             worksheet.getCell(3 + i, colOffset + 1).alignment = { horizontal: "center" };
           }
           // Track where to put the image for this entry
@@ -242,7 +278,8 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
     } else if (entry.category) {
       title += ` (${formatCategory(entry.category)})`;
     }
-    worksheet.addRow([title]);
+    const qty = quantities[entry._id] || 1;
+    worksheet.addRow([title + (qty > 1 ? ` (x${qty})` : "")]);
     worksheet.mergeCells("A1:B1");
     worksheet.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
     worksheet.getCell("A1").font = { bold: true, size: 14 };
@@ -251,7 +288,12 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
     worksheet.getCell("B2").font = { bold: true };
     worksheet.getCell("B2").alignment = { horizontal: "center" };
     entry.items.forEach(item => {
-      worksheet.addRow([item.description, item.quantity || ""]);
+      let baseQty = item.quantity !== undefined && item.quantity !== null && item.quantity !== "" ? Number(item.quantity) : 1;
+      let totalQty = baseQty * qty;
+      worksheet.addRow([
+        item.description,
+        totalQty
+      ]);
     });
     // Center quantity column
     for (let i = 3; i < entry.items.length + 3; ++i) {
@@ -359,13 +401,6 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
             />
             Select All
           </label>
-          <button
-            onClick={handleDownloadSelectedExcel}
-            disabled={selectedIds.length === 0 || downloadingMulti}
-            style={{ background: '#38caef', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: 5, fontWeight: 500, fontSize: 14, boxShadow: '0 2px 8px rgba(38,202,239,0.10)', transition: 'background 0.2s', opacity: selectedIds.length === 0 ? 0.6 : 1 }}
-          >
-            {downloadingMulti ? 'Downloading...' : `Download Selected to Excel (${selectedIds.length})`}
-          </button>
           <label style={{ display: 'inline-flex', alignItems: 'center', background: '#f7fbfd', border: '1.2px solid #38caef', borderRadius: 18, padding: '4px 12px 4px 8px', fontSize: 13, color: '#2596be', fontWeight: 500, boxShadow: '0 2px 8px rgba(38,202,239,0.08)', cursor: 'pointer', gap: 6, zIndex: 10, marginLeft: 'auto' }}>
             <span style={{marginRight: 5, fontWeight: 600}}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38caef" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -414,20 +449,115 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
             <p className="category">{formatCategory(entry.category)}</p>
           </div>
 
-          <button className="view-btn" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10}}>
-            <input
-              type="checkbox"
-              checked={selectedIds.includes(entry._id)}
-              onClick={e => { e.stopPropagation(); handleSelectCard(entry._id); }}
-              readOnly
-              className="card-checkbox"
-              title="Select card"
-              style={{margin:0}}
-            />
-            <span style={{flex:1,textAlign:'center'}} onClick={e => { e.stopPropagation(); setSelectedEntry(entry); setShowEdit(false); }}>
-              View Details
-            </span>
-          </button>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <button className="view-btn" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,background:'#38caef',color:'#fff',border:'none',padding:'6px 12px',borderRadius:5,fontWeight:500,fontSize:14,boxShadow:'0 2px 8px rgba(38,202,239,0.10)',transition:'background 0.2s',flex:1}}>
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(entry._id)}
+                onClick={e => { e.stopPropagation(); handleSelectCard(entry._id); }}
+                readOnly
+                className="card-checkbox"
+                title="Select card"
+                style={{margin:0}}
+              />
+              <span style={{flex:1,textAlign:'center'}} onClick={e => { e.stopPropagation(); setSelectedEntry(entry); setShowEdit(false); }}>
+                View Details
+              </span>
+            </button>
+          </div>
+              {/* Selection List Sidebar (fixed) */}
+              {showCart && selectedIds.length > 0 && (
+                <div style={{
+                  position: 'fixed',
+                  top: 0,
+                  right: 0,
+                  width: 360,
+                  height: '100vh',
+                  background: '#fff',
+                  boxShadow: '-2px 0 16px rgba(38,202,239,0.13)',
+                  zIndex: 1000,
+                  padding: 24,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 18
+                }}>
+                  <div>
+                    <h2 style={{margin:0, fontSize:22, color:'#2596be', textAlign:'left'}}>Selection List</h2>
+                    <div style={{fontSize:14, color:'#2596be', fontWeight:500, marginTop:2, textAlign:'left'}}>
+                      Select quantity for each assembly below
+                    </div>
+                  </div>
+                  <div style={{flex:1,overflowY:'auto',maxHeight:'60vh',width:'100%'}}>
+                    {selectedIds.map(id => {
+                      const entry = entries.find(e => e._id === id);
+                      if (!entry) return null;
+                      return (
+                        <div key={id} style={{borderBottom:'1px solid #eee',padding:'10px 0',display:'flex',alignItems:'center',gap:10}}>
+                          <div style={{flex:1}}>
+                            <div style={{fontWeight:600}}>{entry.title}</div>
+                            <div style={{fontSize:13, color:'#888'}}>{entry.category}</div>
+                          </div>
+                          <input
+                            type="number"
+                            min={1}
+                            value={quantities[id] || 1}
+                            onChange={e => handleQuantityChange(id, e.target.value)}
+                            style={{width:48, padding:'2px 6px', borderRadius:4, border:'1px solid #38caef'}}
+                          />
+                          <button onClick={() => setConfirmRemoveId(id)} style={{background:'none',border:'none',color:'#e11d48',fontSize:20,cursor:'pointer'}} title="Remove">&times;</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{marginTop:24, display:'flex', gap:12, justifyContent:'center', width:'100%'}}>
+                    <button
+                      onClick={() => setConfirmDownload(true)}
+                      disabled={selectedIds.length === 0 || downloadingMulti}
+                      style={{ background: '#38caef', color: '#fff', border: 'none', padding: '14px 0', borderRadius: 6, fontWeight: 600, fontSize: 16, flex:1, boxShadow: '0 2px 8px rgba(38,202,239,0.10)', transition: 'background 0.2s', opacity: selectedIds.length === 0 ? 0.6 : 1 }}
+                    >
+                      {downloadingMulti ? 'Downloading...' : `Download ${selectedIds.length > 1 ? 'All' : 'Single'} (${selectedIds.length})`}
+                    </button>
+                    <button
+                      onClick={() => setConfirmCancel(true)}
+                      style={{ background: '#fff', color: '#e11d48', border: '1.5px solid #e11d48', padding: '14px 0', borderRadius: 6, fontWeight: 600, fontSize: 16, flex:1, boxShadow: '0 2px 8px rgba(225,29,72,0.10)', transition: 'background 0.2s' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+          
+                  {confirmRemoveId && (
+                    <ConfirmationDialog
+                      open={!!confirmRemoveId}
+                      type="custom"
+                      payload={{ message: 'Remove this assembly from the Selection List?' }}
+                      onConfirm={() => { handleRemoveFromCart(confirmRemoveId); setConfirmRemoveId(null); }}
+                      onCancel={() => setConfirmRemoveId(null)}
+                    />
+                  )}
+          
+                  {confirmDownload && (
+                    <ConfirmationDialog
+                      open={!!confirmDownload}
+                      type="custom"
+                      payload={{ message: `Download ${selectedIds.length > 1 ? 'all selected assemblies' : 'this assembly'} to Excel?` }}
+                      onConfirm={() => { setConfirmDownload(false); handleDownloadSelectedExcel(); }}
+                      onCancel={() => setConfirmDownload(false)}
+                    />
+                  )}
+
+                  {confirmCancel && (
+                    <ConfirmationDialog
+                      open={!!confirmCancel}
+                      type="custom"
+                      payload={{ message: 'Cancel and clear your selection?' }}
+                      onConfirm={() => { setConfirmCancel(false); setShowCart(false); setSelectedIds([]); setQuantities({}); }}
+                      onCancel={() => setConfirmCancel(false)}
+                    />
+                  )}
+
+                </div>
+              )}
+
         </div>
       ))}
 
@@ -550,18 +680,28 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
                     />
               </div>
             )}
-            <button className="download-excel-btn" style={{background:'#fff',color:'#2596be',border:'1.5px solid #38caef',padding:'8px 14px',borderRadius:6,fontWeight:600,boxShadow:'0 2px 8px rgba(38,202,239,0.10)',transition:'background 0.2s'}} onClick={() => handleDownloadExcel(currentEntry)} title="Download" disabled={downloadingId === currentEntry._id || actionLoading}>
-              {downloadingId === currentEntry._id ? (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <svg width="18" height="18" viewBox="0 0 50 50" style={{ verticalAlign: 'middle' }}>
-                    <circle cx="25" cy="25" r="20" fill="none" stroke="#2596be" strokeWidth="5" strokeDasharray="31.4 31.4" strokeLinecap="round">
-                      <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
-                    </circle>
-                  </svg>
-                  Downloading...
-                </span>
-              ) : "Download"}
-            </button>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <button className="download-excel-btn" style={{background:'#fff',color:'#2596be',border:'1.5px solid #38caef',padding:'8px 14px',borderRadius:6,fontWeight:600,boxShadow:'0 2px 8px rgba(38,202,239,0.10)',transition:'background 0.2s'}} onClick={() => handleDownloadExcel({...currentEntry, quantity: quantities[currentEntry._id] || 1})} title="Download" disabled={downloadingId === currentEntry._id || actionLoading}>
+                {downloadingId === currentEntry._id ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <svg width="18" height="18" viewBox="0 0 50 50" style={{ verticalAlign: 'middle' }}>
+                      <circle cx="25" cy="25" r="20" fill="none" stroke="#2596be" strokeWidth="5" strokeDasharray="31.4 31.4" strokeLinecap="round">
+                        <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
+                      </circle>
+                    </svg>
+                    Downloading...
+                  </span>
+                ) : "Download"}
+              </button>
+              <input
+                type="number"
+                min={1}
+                value={quantities[currentEntry._id] || 1}
+                onChange={e => handleQuantityChange(currentEntry._id, e.target.value)}
+                style={{width:44,padding:'2px 6px',borderRadius:5,border:'none',background:'#38caef',color:'#fff',fontWeight:600,fontSize:15,textAlign:'center',boxShadow:'0 2px 8px rgba(38,202,239,0.10)'}}
+                title="Set quantity"
+              />
+            </div>
             <button className="close-modal" style={{background:'none',color:'#e11d48',border:'none',fontSize:28,fontWeight:700,marginLeft:6,cursor:'pointer',lineHeight:1}} onClick={() => setSelectedEntry(null)} title="Close">&times;</button>
           </div>
           <div className="modal-body">
