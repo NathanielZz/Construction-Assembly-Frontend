@@ -109,18 +109,37 @@ function MaterialsDashboard() {
     try {
       if (pendingAction === 'add') {
         const newMat = await addMaterial(form.name.trim());
-        setMaterials(materials => [...materials, newMat]);
+        if (newMat && newMat._id) {
+          setMaterials(materials => [...materials, newMat]);
+          setEditing(null);
+          setForm({ name: "" });
+          setError("");
+          setShowForm(false);
+          setShowCancelConfirm(false);
+          setShowConfirm(false);
+          setPendingAction(null);
+        } else if (newMat && newMat.error) {
+          setError(newMat.error);
+        } else {
+          setError("Failed to save material");
+        }
       } else if (pendingAction === 'edit' && editing) {
         const updated = await editMaterial(editing._id, form.name.trim());
-        setMaterials(materials => materials.map(m => m._id === updated._id ? updated : m));
+        if (updated && updated._id) {
+          setMaterials(materials => materials.map(m => m._id === updated._id ? updated : m));
+          setEditing(null);
+          setForm({ name: "" });
+          setError("");
+          setShowForm(false);
+          setShowCancelConfirm(false);
+          setShowConfirm(false);
+          setPendingAction(null);
+        } else if (updated && updated.error) {
+          setError(updated.error);
+        } else {
+          setError("Failed to update material");
+        }
       }
-      setEditing(null);
-      setForm({ name: "" });
-      setError("");
-      setShowForm(false);
-      setShowCancelConfirm(false);
-      setShowConfirm(false);
-      setPendingAction(null);
     } catch (err) {
       setError(err?.message || "Failed to save material");
     }
