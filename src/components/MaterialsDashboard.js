@@ -9,9 +9,10 @@ function MaterialsDashboard() {
   const materialsPerPage = 15;
   // Filter logic (search by title)
   const [filter, setFilter] = useState("");
-  const filteredMaterials = materials.filter(mat =>
-    !filter || (mat.name && mat.name.toLowerCase().includes(filter.toLowerCase()))
-  );
+  // Only show materials with a valid name, just like categories
+  const filteredMaterials = materials
+    .filter(mat => mat && typeof mat.name === 'string' && mat.name.trim() !== '')
+    .filter(mat => !filter || mat.name.toLowerCase().includes(filter.toLowerCase()));
   const totalPages = Math.ceil(filteredMaterials.length / materialsPerPage);
   const paginatedMaterials = filteredMaterials.slice((page - 1) * materialsPerPage, page * materialsPerPage);
 

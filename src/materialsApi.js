@@ -1,8 +1,16 @@
 
-// Get the API base URL from environment or fallback to relative (proxy for dev)
-const API_BASE = process.env.REACT_APP_API_URL || '';
 
-// Helper to handle fetch and errors
+// Use the same pattern as api.js for deployment compatibility
+const MATERIALS_API_URL = process.env.REACT_APP_MATERIALS_API_URL || process.env.REACT_APP_API_URL || "http://localhost:5000/materials";
+
+function getAuthHeaders() {
+  const token = sessionStorage.getItem("token");
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+}
+
 async function fetchWithErrorHandling(url, options = {}) {
   try {
     const res = await fetch(url, options);
@@ -28,37 +36,28 @@ async function fetchWithErrorHandling(url, options = {}) {
 }
 
 export async function getMaterials() {
-  return fetchWithErrorHandling(`${API_BASE}/materials`);
+  return fetchWithErrorHandling(MATERIALS_API_URL, { headers: getAuthHeaders() });
 }
 
 export async function addMaterial(name) {
-  const token = sessionStorage.getItem('token');
-  return fetchWithErrorHandling(`${API_BASE}/materials`, {
+  return fetchWithErrorHandling(MATERIALS_API_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ name })
   });
 }
 
 export async function editMaterial(id, name) {
-  const token = sessionStorage.getItem('token');
-  return fetchWithErrorHandling(`${API_BASE}/materials/${id}`, {
+  return fetchWithErrorHandling(`${MATERIALS_API_URL}/${id}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ name })
   });
 }
 
 export async function deleteMaterial(id) {
-  const token = sessionStorage.getItem('token');
-  return fetchWithErrorHandling(`${API_BASE}/materials/${id}`, {
+  return fetchWithErrorHandling(`${MATERIALS_API_URL}/${id}`, {
     method: 'DELETE',
-    headers: token ? { Authorization: `Bearer ${token}` } : {}
+    headers: getAuthHeaders(),
   });
 }
