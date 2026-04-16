@@ -6,7 +6,6 @@ import ConfirmationDialog from "./ConfirmationDialog";
 function CategoriesDashboard({ onBreadcrumb }) {
   const [categories, setCategories] = useState([]);
   const [pendingCategories, setPendingCategories] = useState([]);
-  const [initialPending, setInitialPending] = useState([]);
   const [deletedKeys, setDeletedKeys] = useState([]);
   const [showErrorDialog, setShowErrorDialog] = useState("");
   const [showConfirm, setShowConfirm] = useState({ type: null, payload: null });
@@ -54,7 +53,6 @@ function CategoriesDashboard({ onBreadcrumb }) {
       cats = [allCat, ...cats];
     }
     setPendingCategories(cats);
-    setInitialPending(JSON.stringify(cats));
     setDeletedKeys([]);
   }, [categories]);
 
@@ -73,13 +71,6 @@ function CategoriesDashboard({ onBreadcrumb }) {
           />
           <button style={{ background: '#e6f4fa', color: '#2596be', border: 'none', borderRadius: 6, fontWeight: 600, fontSize: 16, padding: '8px 18px', cursor: 'pointer' }} onClick={() => setPendingCategories(prev => [...prev, { key: '', label: '', _id: `cat-${nextId.current++}`, hidden: false }])}>Add Category</button>
           <button style={{ background: '#2596be', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 600, fontSize: 16, padding: '8px 18px', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }} disabled={saving} onClick={() => setShowConfirm({ type: 'save' })}>{saving ? 'Saving...' : 'Save'}</button>
-          <button style={{ background: '#eee', color: '#444', border: 'none', borderRadius: 6, fontWeight: 600, fontSize: 16, padding: '8px 18px', cursor: 'pointer' }} onClick={() => {
-            if (JSON.stringify(pendingCategories) !== initialPending) {
-              setShowConfirm({ type: 'cancel' });
-            } else {
-              loadCategories();
-            }
-          }}>Cancel</button>
         </div>
       </div>
       <div style={{ border: '1px solid #eee', borderRadius: 8, overflow: 'hidden', minHeight: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
