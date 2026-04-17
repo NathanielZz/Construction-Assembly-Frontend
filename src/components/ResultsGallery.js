@@ -67,122 +67,176 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
         });
       };
 
-      // Download selected entries as one Excel file, side by side in one worksheet
+      // Download selected entries as BOM Excel (combined + per-assembly sheets)
       const handleDownloadSelectedExcel = async () => {
         setDownloadingMulti(true);
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet("Selected Entries");
-        const selectedEntries = entries.filter((e) => selectedIds.includes(e._id));
-        // Find max items for row alignment
-        const maxItems = Math.max(...selectedEntries.map(e => (e.items?.length || 0)));
-
-        // Prepare columns: each entry gets 2 columns (Description, Quantity), with a space column between entries
-        let colOffset = 1;
-        // Track where each image should be placed (row per entry)
-        const imagePlacements = [];
-        selectedEntries.forEach((entry, idx) => {
-          // Title row: TITLE (CATEGORY) only
-          let title = entry.title;
-          if (entry.category) {
-            title += ` (${formatCategory(entry.category)})`;
-          }
-          const qty = quantities[entry._id] || 1;
-          worksheet.mergeCells(1, colOffset, 1, colOffset + 1);
-          worksheet.getCell(1, colOffset).value = title + (qty > 1 ? ` (x${qty})` : "");
-          worksheet.getCell(1, colOffset).alignment = { horizontal: "center", vertical: "middle" };
-          worksheet.getCell(1, colOffset).font = { bold: true, size: 14 };
-          // Header row
-          worksheet.getCell(2, colOffset).value = "Description";
-          worksheet.getCell(2, colOffset).font = { bold: true };
-          worksheet.getCell(2, colOffset + 1).value = "Quantity";
-          worksheet.getCell(2, colOffset + 1).font = { bold: true };
-          worksheet.getCell(2, colOffset + 1).alignment = { horizontal: "center" };
-          // Data rows
-          for (let i = 0; i < maxItems; ++i) {
-            const item = entry.items?.[i];
-            worksheet.getCell(3 + i, colOffset).value = item ? item.description : "";
-            worksheet.getCell(3 + i, colOffset + 1).value = item ? (item.quantity ? (Number(item.quantity) * qty) : qty) : "";
-            worksheet.getCell(3 + i, colOffset + 1).alignment = { horizontal: "center" };
-          }
-          // Track where to put the image for this entry
-          imagePlacements.push({
-            entry,
-            colOffset,
-            imgRow: maxItems + 4 // row directly after the last data row (no extra space)
+        try {
+          // Prepare payload for /bom/export
+          const selectedEntries = entries.filter((e) => selectedIds.includes(e._id));
+          const assemblies = selectedEntries.map(e => ({
+            id: e._id,
+            quantity: quantities[e._id] || 1
+          }));
+          // Use API URL from .env or fallback
+          const BOM_API_URL = process.env.REACT_APP_BOM_API_URL || process.env.REACT_APP_API_URL?.replace(/\/progress$/, '/bom') || "http://localhost:5000/bom";
+          const token = sessionStorage.getItem("token");
+          const res = await fetch(`${BOM_API_URL}/export`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify({ assemblies })
           });
-          // Borders and column width
-          for (let r = 1; r <= maxItems + 2; ++r) {
-            for (let c = colOffset; c <= colOffset + 1; ++c) {
-              worksheet.getCell(r, c).border = {
+          if (!res.ok) throw new Error(await res.text());
+          const bomData = await res.json();
+          // bomData: { combined: [{description, quantity, materialId}], assemblies: [{title, items, image, ...}] }
+
+          const workbook = new ExcelJS.Workbook();
+          // 1. Master BOM sheet (template: Material, Quantity)
+          const bomSheet = workbook.addWorksheet("BOM");
+          // Add a title row with actual assembly titles
+          const assemblyTitles = bomData.assemblies.map(asm => asm.title || "").join(', ');
+          bomSheet.addRow([`Assemblies: ${assemblyTitles}`]);
+          bomSheet.mergeCells(`A1:B1`);
+          bomSheet.getRow(1).font = { bold: true, size: 13 };
+          // Header row
+          bomSheet.addRow(["Material", "Quantity"]);
+          bomSheet.getRow(2).font = { bold: true };
+          // Add materials rows (ensure material name is filled)
+          bomData.combined.forEach(row => {
+            bomSheet.addRow([
+              row.description || "(No Name)",
+              row.quantity
+            ]);
+          });
+          bomSheet.columns = [
+            { width: 40 },
+            { width: 16 }
+          ];
+          for (let i = 3; i <= bomData.combined.length + 2; ++i) {
+            bomSheet.getCell(`B${i}`).alignment = { horizontal: "center" };
+          }
+          // Borders
+          bomSheet.eachRow({ includeEmpty: false }, function(row) {
+            row.eachCell({ includeEmpty: false }, function(cell) {
+              cell.border = {
                 top: { style: "thin" },
                 left: { style: "thin" },
                 bottom: { style: "thin" },
                 right: { style: "thin" }
               };
+            });
+          });
+
+          // 2. Per-assembly sheets
+          for (const asm of bomData.assemblies) {
+            const ws = workbook.addWorksheet(asm.title?.slice(0, 28) || "Assembly");
+            // Title row
+            ws.addRow([asm.title + (asm.quantity > 1 ? ` (x${asm.quantity})` : "")]);
+            ws.mergeCells("A1:B1");
+            ws.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
+            ws.getCell("A1").font = { bold: true, size: 14 };
+            ws.addRow(["Material", "Quantity"]);
+            ws.getCell("A2").font = { bold: true };
+            ws.getCell("B2").font = { bold: true };
+            ws.getCell("B2").alignment = { horizontal: "center" };
+            (asm.items || []).forEach(item => {
+              ws.addRow([
+                item.description || item.name || item.Material || item.material || "(No Name)",
+                item.quantity
+              ]);
+            });
+            // Center quantity column
+            for (let i = 3; i < (asm.items?.length || 0) + 3; ++i) {
+              ws.getCell(`B${i}`).alignment = { horizontal: "center" };
             }
-          }
-          worksheet.getColumn(colOffset).width = Math.max(12, ...(entry.items || []).map(i => (i.description || "").length));
-          worksheet.getColumn(colOffset + 1).width = 10;
-
-          // Add image under the table if available
-          // Image will be placed after all columns are set (see below)
-
-          // Add a space column after each entry except the last
-          if (idx < selectedEntries.length - 1) {
-            colOffset += 3; // 2 for entry, 1 for space
-            worksheet.getColumn(colOffset - 1).width = 2;
-          } else {
-            colOffset += 2;
-          }
-        });
-
-        // Wait for all images to be fetched and embed them
-        await Promise.all(imagePlacements.map(async ({ entry, colOffset, imgRow }) => {
-          if (entry.image) {
-            try {
-              const res = await fetch(entry.image);
-              const blob = await res.blob();
-              const dataUrl = await new Promise((resolve, reject) => {
+            // Borders
+            ws.eachRow({ includeEmpty: false }, function(row) {
+              row.eachCell({ includeEmpty: false }, function(cell) {
+                cell.border = {
+                  top: { style: "thin" },
+                  left: { style: "thin" },
+                  bottom: { style: "thin" },
+                  right: { style: "thin" }
+                };
+              });
+            });
+            ws.columns = [
+              { width: Math.max(12, ...(asm.items || []).map(i => (i.description || "").length)) },
+              { width: 10 }
+            ];
+            // Embed image if available
+            if (asm.image) {
+              try {
+                const response = await fetch(asm.image);
+                const blob = await response.blob();
+                const img = new window.Image();
+                const imgUrl = URL.createObjectURL(blob);
+                const imgDims = await new Promise((resolve, reject) => {
+                  img.onload = () => {
+                    resolve({ width: img.naturalWidth, height: img.naturalHeight });
+                    URL.revokeObjectURL(imgUrl);
+                  };
+                  img.onerror = reject;
+                  img.src = imgUrl;
+                });
+                // Set fixed height for Excel image, scale width proportionally
+                const fixedHeight = 200; // px
+                let { width, height } = imgDims;
+                if (height !== fixedHeight) {
+                  const ratio = fixedHeight / height;
+                  width = Math.round(width * ratio);
+                  height = fixedHeight;
+                }
+                // Convert to base64
                 const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-              });
-              const ext = entry.image.split('.').pop().toLowerCase();
-              const imageId = workbook.addImage({
-                base64: dataUrl.split(',')[1],
-                extension: ext === 'jpg' ? 'jpeg' : ext
-              });
-              worksheet.addImage(imageId, {
-                tl: { col: colOffset - 1, row: imgRow - 1 },
-                ext: { width: 160, height: 120 }
-              });
-            } catch (e) {
-              // Ignore image errors
+                const base64 = await new Promise((resolve, reject) => {
+                  reader.onloadend = () => resolve(reader.result.split(",")[1]);
+                  reader.onerror = reject;
+                  reader.readAsDataURL(blob);
+                });
+                const ext = asm.image.split('.').pop().toLowerCase();
+                const imageId = workbook.addImage({
+                  base64: base64,
+                  extension: ext === 'jpg' ? 'jpeg' : ext
+                });
+                ws.addImage(imageId, {
+                  tl: { col: 2.2, row: 0.2 },
+                  ext: { width, height }
+                });
+              } catch (err) {
+                // If image fails, just skip embedding
+                console.error('Failed to embed image in Excel:', err);
+              }
             }
           }
-        }));
-        // Improved file name
-        let fileName = "Materials_Export_" + new Date().toISOString().slice(0,10);
-        if (selectedEntries.length === 1) {
-          fileName = `Materials_${selectedEntries[0].title.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0,10)}`;
-        } else if (selectedEntries.length > 1) {
-          fileName = `Materials_${selectedEntries[0].title.replace(/\s+/g, "_")}_and_more_${new Date().toISOString().slice(0,10)}`;
-        }
-        fileName += ".xlsx";
-        const buffer = await workbook.xlsx.writeBuffer();
-        const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          window.URL.revokeObjectURL(url);
-          a.remove();
+
+          // Download file
+          let fileName = "BOM_Export_" + new Date().toISOString().slice(0,10);
+          if (selectedEntries.length === 1) {
+            fileName = `BOM_${selectedEntries[0].title.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0,10)}`;
+          } else if (selectedEntries.length > 1) {
+            fileName = `BOM_${selectedEntries[0].title.replace(/\s+/g, "_")}_and_more_${new Date().toISOString().slice(0,10)}`;
+          }
+          fileName += ".xlsx";
+          const buffer = await workbook.xlsx.writeBuffer();
+          const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+            a.remove();
+            setDownloadingMulti(false);
+          }, 1200);
+        } catch (err) {
+          alert("Failed to export BOM: " + (err?.message || err));
           setDownloadingMulti(false);
-        }, 1200);
+        }
       };
     const [actionLoading, setActionLoading] = useState(false);
 
@@ -390,8 +444,10 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
     <div className="gallery" style={{ minHeight: '70vh', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', justifyContent: 'center', alignContent: 'flex-start', position: 'relative' }}>
       {/* Multi-select controls */}
 
-      {entries.length > 0 && (
-        <div style={{ gridColumn: '1 / -1', margin: 0, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+
+      {/* Always show the Show Hidden toggle, only show Select All if entries exist */}
+      <div style={{ gridColumn: '1 / -1', margin: 0, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        {entries.length > 0 && (
           <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input
               type="checkbox"
@@ -401,15 +457,15 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
             />
             Select All
           </label>
-          <label style={{ display: 'inline-flex', alignItems: 'center', background: '#f7fbfd', border: '1.2px solid #38caef', borderRadius: 18, padding: '4px 12px 4px 8px', fontSize: 13, color: '#2596be', fontWeight: 500, boxShadow: '0 2px 8px rgba(38,202,239,0.08)', cursor: 'pointer', gap: 6, zIndex: 10, marginLeft: 'auto' }}>
-            <span style={{marginRight: 5, fontWeight: 600}}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38caef" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-            </span>
-            <input type="checkbox" checked={!!showHidden} onChange={e => setShowHidden(e.target.checked)} style={{accentColor:'#38caef', width:18, height:18, marginRight:6}} />
-            Show hidden cards
-          </label>
-        </div>
-      )}
+        )}
+        <label style={{ display: 'inline-flex', alignItems: 'center', background: '#f7fbfd', border: '1.2px solid #38caef', borderRadius: 18, padding: '4px 12px 4px 8px', fontSize: 13, color: '#2596be', fontWeight: 500, boxShadow: '0 2px 8px rgba(38,202,239,0.08)', cursor: 'pointer', gap: 6, zIndex: 10, marginLeft: 'auto' }}>
+          <span style={{marginRight: 5, fontWeight: 600}}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38caef" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </span>
+          <input type="checkbox" checked={!!showHidden} onChange={e => setShowHidden(e.target.checked)} style={{accentColor:'#38caef', width:18, height:18, marginRight:6}} />
+          Show hidden cards
+        </label>
+      </div>
 
 
       {paginatedEntries.length === 0 && (

@@ -202,15 +202,15 @@ function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
     if (submitting) return;
     setSubmitting(true);
     setError("");
-    // Validate items: code and description required
+    // Title, item code, and material name (description) are required
     const errors = formData.items.map(item => ({
       code: !item.code ? "Item code is required" : "",
-      description: !item.description ? "Description is required" : ""
+      description: !item.description ? "Material name is required" : ""
     }));
     setItemErrors(errors);
     const hasError = errors.some(err => err.code || err.description);
     if (hasError) {
-      setError("Please fill in all required fields for each material.");
+      setError("Please fill in the item code and material name for each item.");
       setSubmitting(false);
       return;
     }
@@ -294,9 +294,6 @@ function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
                 disabled={isClosed}
               >
                 <option value="">Select category</option>
-                {categories.filter(c => c.key === 'all').map(cat => (
-                  <option key={cat.key} value={cat.key}>{cat.label}</option>
-                ))}
                 {categories.filter(c => c.key !== 'all').map(cat => (
                   <option key={cat.key} value={cat.key}>{cat.label}</option>
                 ))}
@@ -350,6 +347,8 @@ function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
               )}
             </div>
 
+            {/* Materials Divider */}
+            <div style={{ fontWeight: 'bold', fontSize: '1.1em', margin: '24px 0 8px 0', letterSpacing: 1 }}>Materials:</div>
             {/* Items Section */}
             {formData.items.map((item, idx) => (
               <div key={idx} className="item-row" style={{ alignItems: 'flex-start' }}>
@@ -391,7 +390,7 @@ function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
                     type="text"
                     name="description"
                     list={`material-desc-${idx}`}
-                    placeholder="Description (required)"
+                    placeholder="Material Name (required)"
                     value={item.description}
                     onChange={(e) => handleChange(e, idx)}
                     className="form__field"
@@ -403,7 +402,7 @@ function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
                       <option key={mat.name} value={mat.name}>{mat.name}</option>
                     ))}
                   </datalist>
-                  <label className="form__label">Description *</label>
+                  <label className="form__label">Material Name *</label>
                   {itemErrors[idx]?.description && <div style={{ color: '#d00', fontSize: 12 }}>{itemErrors[idx].description}</div>}
                 </div>
 

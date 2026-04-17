@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import MaterialsDashboard from "./MaterialsDashboard";
 import ConfirmationDialog from "./ConfirmationDialog";
+import AddCategoryModal from "./AddCategoryModal";
 
 function CategoriesDashboard({ onBreadcrumb }) {
   const [categories, setCategories] = useState([]);
@@ -10,6 +11,7 @@ function CategoriesDashboard({ onBreadcrumb }) {
   const [showErrorDialog, setShowErrorDialog] = useState("");
   const [showConfirm, setShowConfirm] = useState({ type: null, payload: null });
   const [saving, setSaving] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   // Pagination state (must be after pendingCategories is declared)
   const [page, setPage] = useState(1);
   const categoriesPerPage = 15;
@@ -19,7 +21,13 @@ function CategoriesDashboard({ onBreadcrumb }) {
     cat.key !== 'all' && (!filter || cat.key.toLowerCase().includes(filter.toLowerCase()))
   );
   const totalPages = Math.ceil(filteredCategories.length / categoriesPerPage);
-  const paginatedCategories = filteredCategories.slice((page - 1) * categoriesPerPage, page * categoriesPerPage);
+  // Instead of slicing filteredCategories, keep track of the original index in pendingCategories for correct numbering
+  const paginatedCategories = filteredCategories
+    .map(cat => ({
+      ...cat,
+      originalIdx: pendingCategories.findIndex(c => c._id === cat._id)
+    }))
+    .slice((page - 1) * categoriesPerPage, page * categoriesPerPage);
   const nextId = useRef(1);
 
   const loadCategories = async () => {
@@ -69,7 +77,25 @@ function CategoriesDashboard({ onBreadcrumb }) {
             onChange={e => { setFilter(e.target.value); setPage(1); }}
             style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #ccc', fontSize: 15, minWidth: 180 }}
           />
-          <button style={{ background: '#e6f4fa', color: '#2596be', border: 'none', borderRadius: 6, fontWeight: 600, fontSize: 16, padding: '8px 18px', cursor: 'pointer' }} onClick={() => setPendingCategories(prev => [...prev, { key: '', label: '', _id: `cat-${nextId.current++}`, hidden: false }])}>Add Category</button>
+          <button style={{ background: '#e6f4fa', color: '#2596be', border: 'none', borderRadius: 6, fontWeight: 600, fontSize: 16, padding: '8px 18px', cursor: 'pointer' }} onClick={() => setShowAddModal(true)}>Add Category</button>
+          <AddCategoryModal
+            open={showAddModal}
+            onClose={() => setShowAddModal(false)}
+            maxOrder={pendingCategories.length + 1}
+            onAdd={(name, orderNum) => {
+              setPendingCategories(prev => {
+                const arr = [...prev];
+                let idx = arr.length;
+                if (typeof orderNum === 'number' && !isNaN(orderNum)) {
+                  if (orderNum <= arr.length + 1) {
+                    idx = orderNum - 1;
+                  }
+                }
+                arr.splice(idx, 0, { key: name, label: name, _id: `cat-${nextId.current++}`, hidden: false });
+                return arr;
+              });
+            }}
+          />
           <button style={{ background: '#2596be', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 600, fontSize: 16, padding: '8px 18px', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }} disabled={saving} onClick={() => setShowConfirm({ type: 'save' })}>{saving ? 'Saving...' : 'Save'}</button>
         </div>
       </div>
@@ -89,17 +115,18 @@ function CategoriesDashboard({ onBreadcrumb }) {
             </thead>
             <tbody>
               {paginatedCategories.map((cat, idx) => {
-                const realIdx = pendingCategories.findIndex(c => c._id === cat._id);
+                // Display number always starts at 1 for visible rows
+                const originalIdx = cat.originalIdx;
                 return (
                   <tr key={cat._id || cat.key || idx} style={{ background: idx % 2 === 0 ? '#fff' : '#f8fafb', transition: 'background 0.2s' }}>
-                    <td style={{ padding: '8px 12px', color: '#bbb', fontWeight: 500 }}>{(page - 1) * categoriesPerPage + idx + 1}</td>
+                    <td style={{ padding: '8px 12px', color: '#888', fontWeight: 500 }}>{originalIdx + 1}</td>
                     <td style={{ padding: '8px 12px' }}>
                       <input
                         placeholder="Category name"
                         value={cat.key}
                         onChange={e => {
                           const newName = e.target.value;
-                          setPendingCategories(prev => prev.map((c, i) => i === realIdx ? { ...c, key: newName, label: newName } : c));
+                          setPendingCategories(prev => prev.map((c, i) => i === originalIdx ? { ...c, key: newName, label: newName } : c));
                         }}
                         style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', fontSize: 15, borderRadius: 5, border: '1px solid #e0e0e0', background: cat.hidden ? '#f5f5f5' : '#fff', color: cat.hidden ? '#aaa' : '#222', outline: 'none', transition: 'background 0.2s, color 0.2s' }}
                       />
@@ -107,14 +134,14 @@ function CategoriesDashboard({ onBreadcrumb }) {
                     <td style={{ padding: '8px 12px', textAlign: 'center', whiteSpace: 'nowrap', display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', border: 'none', background: 'transparent' }}>
                       {/* Move Up Icon */}
                       <button
-                        style={{ background: 'none', border: 'none', cursor: realIdx === 0 ? 'not-allowed' : 'pointer', opacity: realIdx === 0 ? 0.4 : 1, padding: 0, margin: 0, height: 32, width: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        disabled={realIdx === 0}
+                        style={{ background: 'none', border: 'none', cursor: originalIdx === 0 ? 'not-allowed' : 'pointer', opacity: originalIdx === 0 ? 0.4 : 1, padding: 0, margin: 0, height: 32, width: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        disabled={originalIdx === 0}
                         title="Move Up"
                         onClick={() => {
-                          if (realIdx === 0) return;
+                          if (originalIdx === 0) return;
                           setPendingCategories(prev => {
                             const arr = [...prev];
-                            [arr[realIdx-1], arr[realIdx]] = [arr[realIdx], arr[realIdx-1]];
+                            [arr[originalIdx-1], arr[originalIdx]] = [arr[originalIdx], arr[originalIdx-1]];
                             return arr;
                           });
                         }}
@@ -123,14 +150,14 @@ function CategoriesDashboard({ onBreadcrumb }) {
                       </button>
                       {/* Move Down Icon */}
                       <button
-                        style={{ background: 'none', border: 'none', cursor: realIdx === pendingCategories.length-1 ? 'not-allowed' : 'pointer', opacity: realIdx === pendingCategories.length-1 ? 0.4 : 1, padding: 0, margin: 0, height: 32, width: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        disabled={realIdx === pendingCategories.length-1}
+                        style={{ background: 'none', border: 'none', cursor: originalIdx === (pendingCategories.length-1) ? 'not-allowed' : 'pointer', opacity: originalIdx === (pendingCategories.length-1) ? 0.4 : 1, padding: 0, margin: 0, height: 32, width: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        disabled={originalIdx === (pendingCategories.length-1)}
                         title="Move Down"
                         onClick={() => {
-                          if (realIdx === pendingCategories.length-1) return;
+                          if (originalIdx === pendingCategories.length-1) return;
                           setPendingCategories(prev => {
                             const arr = [...prev];
-                            [arr[realIdx+1], arr[realIdx]] = [arr[realIdx], arr[realIdx+1]];
+                            [arr[originalIdx+1], arr[originalIdx]] = [arr[originalIdx], arr[originalIdx+1]];
                             return arr;
                           });
                         }}
@@ -141,7 +168,7 @@ function CategoriesDashboard({ onBreadcrumb }) {
                       <button
                         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, margin: 0, height: 32, width: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                         title="Remove"
-                        onClick={() => setShowConfirm({ type: 'delete', payload: { idx: realIdx, cat } })}
+                        onClick={() => setShowConfirm({ type: 'delete', payload: { idx: originalIdx, cat } })}
                       >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b00" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                       </button>
@@ -150,7 +177,7 @@ function CategoriesDashboard({ onBreadcrumb }) {
                         type="button"
                         style={{ background: cat.hidden ? '#fbe9e9' : '#f0f4f8', color: cat.hidden ? '#b00' : '#888', border: 'none', borderRadius: 5, fontWeight: 500, fontSize: 14, padding: '6px 12px', cursor: 'pointer', minWidth: 70, marginLeft: 8 }}
                         onClick={() => {
-                          setPendingCategories(prev => prev.map((c, i) => i === realIdx ? { ...c, hidden: !cat.hidden } : c));
+                          setPendingCategories(prev => prev.map((c, i) => i === originalIdx ? { ...c, hidden: !cat.hidden } : c));
                         }}
                       >
                         {cat.hidden ? 'Unhide' : 'Hide'}
