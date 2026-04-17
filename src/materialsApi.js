@@ -40,19 +40,21 @@ export async function getMaterials() {
   return fetchWithErrorHandling(MATERIALS_API_URL, { headers: getAuthHeaders() });
 }
 
-export async function addMaterial(name) {
+
+export async function addMaterial(name, unitOfMeasure) {
   return fetchWithErrorHandling(MATERIALS_API_URL, {
     method: 'POST',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ name })
+    body: JSON.stringify({ name, unitOfMeasure })
   });
 }
 
-export async function editMaterial(id, name) {
+
+export async function editMaterial(id, name, unitOfMeasure) {
   return fetchWithErrorHandling(`${MATERIALS_API_URL}/${id}`, {
     method: 'PUT',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ name })
+    body: JSON.stringify({ name, unitOfMeasure })
   });
 }
 

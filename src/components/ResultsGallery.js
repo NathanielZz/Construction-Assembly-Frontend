@@ -94,29 +94,34 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
           // bomData: { combined: [{description, quantity, materialId}], assemblies: [{title, items, image, ...}] }
 
           const workbook = new ExcelJS.Workbook();
-          // 1. Master BOM sheet (template: Material, Quantity)
+          // 1. Master BOM sheet (template: Material, Quantity, UOM)
           const bomSheet = workbook.addWorksheet("BOM");
-          // Add a title row with actual assembly titles
+          // Add a title row with actual assembly titles, merged across A1:C1
           const assemblyTitles = bomData.assemblies.map(asm => asm.title || "").join(', ');
           bomSheet.addRow([`Assemblies: ${assemblyTitles}`]);
-          bomSheet.mergeCells(`A1:B1`);
+          bomSheet.mergeCells(`A1:C1`);
           bomSheet.getRow(1).font = { bold: true, size: 13 };
           // Header row
-          bomSheet.addRow(["Material", "Quantity"]);
+          bomSheet.addRow(["Material", "Quantity", "Unit of Measure"]);
           bomSheet.getRow(2).font = { bold: true };
+          bomSheet.getCell("B2").alignment = { horizontal: "center" };
+          bomSheet.getCell("C2").alignment = { horizontal: "center" };
           // Add materials rows (ensure material name is filled)
           bomData.combined.forEach(row => {
             bomSheet.addRow([
               row.description || "(No Name)",
-              row.quantity
+              row.quantity,
+              row.unitOfMeasure || ""
             ]);
           });
           bomSheet.columns = [
             { width: 40 },
+            { width: 16 },
             { width: 16 }
           ];
           for (let i = 3; i <= bomData.combined.length + 2; ++i) {
             bomSheet.getCell(`B${i}`).alignment = { horizontal: "center" };
+            bomSheet.getCell(`C${i}`).alignment = { horizontal: "center" };
           }
           // Borders
           bomSheet.eachRow({ includeEmpty: false }, function(row) {
@@ -133,24 +138,28 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
           // 2. Per-assembly sheets
           for (const asm of bomData.assemblies) {
             const ws = workbook.addWorksheet(asm.title?.slice(0, 28) || "Assembly");
-            // Title row
+            // Title row, merged across A1:C1
             ws.addRow([asm.title + (asm.quantity > 1 ? ` (x${asm.quantity})` : "")]);
-            ws.mergeCells("A1:B1");
+            ws.mergeCells("A1:C1");
             ws.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
             ws.getCell("A1").font = { bold: true, size: 14 };
-            ws.addRow(["Material", "Quantity"]);
+            ws.addRow(["Description", "Quantity", "Unit of Measure"]);
             ws.getCell("A2").font = { bold: true };
             ws.getCell("B2").font = { bold: true };
+            ws.getCell("C2").font = { bold: true };
             ws.getCell("B2").alignment = { horizontal: "center" };
+            ws.getCell("C2").alignment = { horizontal: "center" };
             (asm.items || []).forEach(item => {
               ws.addRow([
                 item.description || item.name || item.Material || item.material || "(No Name)",
-                item.quantity
+                item.quantity,
+                item.unitOfMeasure || ""
               ]);
             });
-            // Center quantity column
+            // Center quantity and UOM columns
             for (let i = 3; i < (asm.items?.length || 0) + 3; ++i) {
               ws.getCell(`B${i}`).alignment = { horizontal: "center" };
+              ws.getCell(`C${i}`).alignment = { horizontal: "center" };
             }
             // Borders
             ws.eachRow({ includeEmpty: false }, function(row) {
@@ -164,10 +173,11 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
               });
             });
             ws.columns = [
-              { width: Math.max(12, ...(asm.items || []).map(i => (i.description || "").length)) },
-              { width: 10 }
+              { width: Math.max(30, ...(asm.items || []).map(i => (i.description || "").length)) },
+              { width: 12 },
+              { width: 16 }
             ];
-            // Embed image if available
+            // Place image to the right of the table (column E, row 1)
             if (asm.image) {
               try {
                 const response = await fetch(asm.image);
@@ -203,7 +213,7 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
                   extension: ext === 'jpg' ? 'jpeg' : ext
                 });
                 ws.addImage(imageId, {
-                  tl: { col: 2.2, row: 0.2 },
+                  tl: { col: 4, row: 0 },
                   ext: { width, height }
                 });
               } catch (err) {
@@ -335,47 +345,63 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
     }
     const qty = quantities[entry._id] || 1;
     worksheet.addRow([title + (qty > 1 ? ` (x${qty})` : "")]);
-    worksheet.mergeCells("A1:B1");
+    worksheet.mergeCells("A1:C1");
     worksheet.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
     worksheet.getCell("A1").font = { bold: true, size: 14 };
-    worksheet.addRow(["Description", "Quantity"]);
+
+    // Add table header
+    worksheet.addRow(["Description", "Quantity", "Unit of Measure"]);
     worksheet.getCell("A2").font = { bold: true };
     worksheet.getCell("B2").font = { bold: true };
+    worksheet.getCell("C2").font = { bold: true };
     worksheet.getCell("B2").alignment = { horizontal: "center" };
+    worksheet.getCell("C2").alignment = { horizontal: "center" };
+
+    // Add material rows
     entry.items.forEach(item => {
       let baseQty = item.quantity !== undefined && item.quantity !== null && item.quantity !== "" ? Number(item.quantity) : 1;
       let totalQty = baseQty * qty;
       worksheet.addRow([
         item.description,
-        totalQty
+        totalQty,
+        item.unitOfMeasure || ""
       ]);
     });
-    // Center quantity column
+
+    // Set column widths for template clarity
+    worksheet.columns = [
+      { width: 45 }, // Description
+      { width: 12 }, // Quantity
+      { width: 16 }  // UOM
+    ];
+
+    // Center quantity and UOM columns
     for (let i = 3; i < entry.items.length + 3; ++i) {
       worksheet.getCell(`B${i}`).alignment = { horizontal: "center" };
+      worksheet.getCell(`C${i}`).alignment = { horizontal: "center" };
     }
-    // Add borders to all cells
-    worksheet.eachRow({ includeEmpty: false }, function(row) {
-      row.eachCell({ includeEmpty: false }, function(cell) {
-        cell.border = {
-          top: { style: "thin" },
-          left: { style: "thin" },
-          bottom: { style: "thin" },
-          right: { style: "thin" }
-        };
-      });
+
+    // Add borders to all cells in the table
+    worksheet.eachRow({ includeEmpty: false }, function(row, rowNumber) {
+      if (rowNumber <= entry.items.length + 2) {
+        row.eachCell({ includeEmpty: false }, function(cell, colNumber) {
+          if (colNumber <= 3) {
+            cell.border = {
+              top: { style: "thin" },
+              left: { style: "thin" },
+              bottom: { style: "thin" },
+              right: { style: "thin" }
+            };
+          }
+        });
+      }
     });
-    worksheet.columns = [
-      { width: Math.max(12, ...entry.items.map(i => (i.description || "").length)) },
-      { width: 10 }
-    ];
-    // Embed image if available
+
+    // Place image to the right of the table (column E, row 1) - only once
     if (entry.image) {
       try {
-        // Fetch image as blob and convert to base64
         const response = await fetch(entry.image);
         const blob = await response.blob();
-        // Get image dimensions
         const img = new window.Image();
         const imgUrl = URL.createObjectURL(blob);
         const imgDims = await new Promise((resolve, reject) => {
@@ -386,15 +412,13 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
           img.onerror = reject;
           img.src = imgUrl;
         });
-        // Set fixed height for Excel image, scale width proportionally
-        const fixedHeight = 200; // px
+        const fixedHeight = 200;
         let { width, height } = imgDims;
         if (height !== fixedHeight) {
           const ratio = fixedHeight / height;
           width = Math.round(width * ratio);
           height = fixedHeight;
         }
-        // Convert to base64
         const reader = new FileReader();
         const base64 = await new Promise((resolve, reject) => {
           reader.onloadend = () => resolve(reader.result.split(",")[1]);
@@ -407,14 +431,14 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
           extension: ext === 'jpg' ? 'jpeg' : ext
         });
         worksheet.addImage(imageId, {
-          tl: { col: 2.2, row: 0.2 },
+          tl: { col: 4, row: 0 },
           ext: { width, height }
         });
       } catch (err) {
-        // If image fails, just skip embedding
         console.error('Failed to embed image in Excel:', err);
       }
     }
+
     // Download file
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
@@ -777,9 +801,14 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
             <h3>Materials</h3>
             <ol style={{ paddingLeft: 20 }}>
               {currentEntry.items.map((item, idx) => (
-                <li key={idx}>
-                  <strong>{item.code}</strong>
-                  {item.quantity ? ` — ${item.quantity} ×` : ''} {item.description}
+                <li key={idx} style={{ marginBottom: 8 }}>
+                  <div>
+                    <strong>{item.code}</strong>
+                    {typeof item.quantity !== 'undefined' && item.quantity !== ''
+                      ? ` – ${item.quantity}${item.unitOfMeasure ? ' ' + item.unitOfMeasure : ''} ×`
+                      : ''
+                    } {item.description}
+                  </div>
                 </li>
               ))}
             </ol>

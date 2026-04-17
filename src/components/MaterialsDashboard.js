@@ -38,7 +38,7 @@ function MaterialsDashboard() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // 'add' or 'edit'
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: "" });
+  const [form, setForm] = useState({ name: "", unitOfMeasure: "Unit/s" });
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
 
@@ -46,15 +46,19 @@ function MaterialsDashboard() {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
 
+  // List of common units of measure
+  // No dropdown, just a free input for unit of measure
+
   function handleEdit(mat) {
     setEditing(mat);
-    setForm({ name: mat.name });
+    setForm({ name: mat.name, unitOfMeasure: mat.unitOfMeasure || "Unit/s" });
     setShowForm(true);
   }
 
   // Track initial value for dirty check
-  const initialValue = editing ? editing.name : "";
-  const isDirty = form.name !== initialValue;
+  const initialName = editing ? editing.name : "";
+  const initialUOM = editing ? editing.unitOfMeasure || "Unit/s" : "Unit/s";
+  const isDirty = form.name !== initialName || form.unitOfMeasure !== initialUOM;
 
   const handleCancel = useCallback(() => {
     if (isDirty) {
@@ -66,7 +70,7 @@ function MaterialsDashboard() {
 
   function doCancel() {
     setEditing(null);
-    setForm({ name: "" });
+    setForm({ name: "", unitOfMeasure: "Unit/s" });
     setError("");
     setShowForm(false);
     setShowCancelConfirm(false);
@@ -98,6 +102,10 @@ function MaterialsDashboard() {
       setError("Name is required.");
       return;
     }
+    if (!form.unitOfMeasure.trim()) {
+      setError("Unit of Measure is required.");
+      return;
+    }
     if (!editing && materials.some(m => m.name.toLowerCase() === form.name.trim().toLowerCase())) {
       setError("Name already exists.");
       return;
@@ -109,11 +117,11 @@ function MaterialsDashboard() {
   async function doSaveMaterial() {
     try {
       if (pendingAction === 'add') {
-        const newMat = await addMaterial(form.name.trim());
+        const newMat = await addMaterial(form.name.trim(), form.unitOfMeasure.trim());
         if (newMat && newMat._id) {
           setMaterials(materials => [...materials, newMat]);
           setEditing(null);
-          setForm({ name: "" });
+          setForm({ name: "", unitOfMeasure: "Unit/s" });
           setError("");
           setShowForm(false);
           setShowCancelConfirm(false);
@@ -125,11 +133,11 @@ function MaterialsDashboard() {
           setError("Failed to save material");
         }
       } else if (pendingAction === 'edit' && editing) {
-        const updated = await editMaterial(editing._id, form.name.trim());
+        const updated = await editMaterial(editing._id, form.name.trim(), form.unitOfMeasure.trim());
         if (updated && updated._id) {
           setMaterials(materials => materials.map(m => m._id === updated._id ? updated : m));
           setEditing(null);
-          setForm({ name: "" });
+          setForm({ name: "", unitOfMeasure: "Unit/s" });
           setError("");
           setShowForm(false);
           setShowCancelConfirm(false);
@@ -206,6 +214,25 @@ function MaterialsDashboard() {
                 }}
                 autoFocus
               />
+              <label style={{ fontWeight: 500, marginBottom: 6, display: 'block', color: '#2596be' }}>Unit of Measure</label>
+              <input
+                name="unitOfMeasure"
+                value={form.unitOfMeasure}
+                onChange={handleChange}
+                placeholder="Enter unit of measure"
+                style={{
+                  width: '100%',
+                  marginBottom: 16,
+                  padding: '12px 14px',
+                  fontSize: 16,
+                  borderRadius: 8,
+                  border: '1.5px solid #38caef',
+                  background: '#f8fafd',
+                  fontWeight: 500,
+                  boxSizing: 'border-box',
+                  outline: 'none'
+                }}
+              />
               {error && (
                 <div style={{ color: '#d00', background: '#fff0f0', padding: '10px', borderRadius: 4, marginBottom: 12, fontWeight: 500 }}>
                   {error}
@@ -257,6 +284,7 @@ function MaterialsDashboard() {
               <tr style={{ background: '#f8fafb', color: '#888', fontWeight: 600, fontSize: 15 }}>
                 <th style={{ textAlign: 'left', padding: '10px 12px', width: 48 }}>#</th>
                 <th style={{ textAlign: 'left', padding: '10px 12px' }}>Name</th>
+                <th style={{ textAlign: 'left', padding: '10px 12px' }}>Unit of Measure</th>
                 <th style={{ textAlign: 'center', padding: '10px 12px', width: 120 }}>Actions</th>
               </tr>
             </thead>
@@ -265,6 +293,7 @@ function MaterialsDashboard() {
                 <tr key={mat.name || idx} style={{ background: idx % 2 === 0 ? '#fff' : '#f8fafb', transition: 'background 0.2s' }}>
                   <td style={{ padding: '8px 12px', color: '#bbb', fontWeight: 500 }}>{(page - 1) * materialsPerPage + idx + 1}</td>
                   <td style={{ padding: '8px 12px' }}>{mat.name}</td>
+                  <td style={{ padding: '8px 12px' }}>{mat.unitOfMeasure || 'Unit/s'}</td>
                   <td style={{ padding: '8px 12px', textAlign: 'center', whiteSpace: 'nowrap', display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', border: 'none', background: 'transparent' }}>
                     <button className="manage-categories-btn" onClick={() => handleEdit(mat)}>Edit</button>
                     <button className="logout-btn" onClick={() => handleDelete(mat.name)} style={{ marginLeft: 8 }}>Delete</button>

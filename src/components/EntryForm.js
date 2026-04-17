@@ -2,41 +2,64 @@ import React, { useState, useRef, useEffect } from "react";
 import { removeImage, getCategories } from "../api";
 import { getMaterials } from "../materialsApi";
 import ConfirmationDialog from "./ConfirmationDialog";
+// Removed dnd-kit imports; using up/down buttons for ordering
 
 function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
-  // Materials state
-  const [materials, setMaterials] = useState([]);
-        // Fetch materials on mount
-        useEffect(() => {
-          async function fetchMaterials() {
-            try {
-              const data = await getMaterials();
-              setMaterials(data);
-            } catch {
-              setMaterials([]);
-            }
-          }
-          fetchMaterials();
-        }, []);
-      // Helper to reset form state to original entry
-      const resetFormState = () => {
-        setFormData(entry || { category: "", title: "", items: [{ code: "", quantity: "", description: "" }], image: "" });
-        setImageFile(null);
-        setImagePreview(entry?.image || "");
-        setItemErrors([]);
-      };
-    const [isClosed, setIsClosed] = useState(false);
-  const [categories, setCategories] = useState([]);
-    const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [formData, setFormData] = useState(
-    entry || { category: "", title: "", items: [{ code: "", quantity: "", description: "" }], image: "" }
-  );
+  // --- PROFESSIONAL SOLUTION: STABLE IDS AND LOCAL STATE ---
+  // 1. Generate a stable id for each item only when loaded or added
+  // 2. Never regenerate all ids on every render or entry change
+  // 3. Let EntryForm manage its own state; parent only passes initial data
+  // Helper to generate a unique id for each item row
+  const generateItemId = () => '_' + Math.random().toString(36).substr(2, 9);
+
+  // Assign a stable id to each item only once (when loaded or added)
+  const assignIds = (items) => items.map(item => ({ ...item, _id: item._id || generateItemId() }));
+
+  // Initialize form state ONCE from entry prop (never re-initialize on every render)
+  const [formData, setFormData] = useState(() => {
+    if (entry && entry.items && entry.items.length > 0) {
+      return { ...entry, items: assignIds(entry.items) };
+    } else {
+      return { category: "", title: "", items: [{ code: "", quantity: "", description: "", unitOfMeasure: "", _id: generateItemId() }], image: "" };
+    }
+  });
   const [imageFile, setImageFile] = useState(null);
   const [isDirty, setIsDirty] = useState(false);
   const [imagePreview, setImagePreview] = useState(entry?.image || "");
   const fileInputRef = useRef();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Materials state
+  const [materials, setMaterials] = useState([]);
+  useEffect(() => {
+    async function fetchMaterials() {
+      try {
+        const data = await getMaterials();
+        setMaterials(data);
+      } catch {
+        setMaterials([]);
+      }
+    }
+    fetchMaterials();
+  }, []);
+
+  // Helper to reset form state to original entry (only assign ids to new items)
+  const resetFormState = () => {
+    let resetItems;
+    if (entry && entry.items && entry.items.length > 0) {
+      resetItems = assignIds(entry.items);
+    } else {
+      resetItems = [{ code: "", quantity: "", description: "", unitOfMeasure: "", _id: generateItemId() }];
+    }
+    setFormData(entry ? { ...entry, items: resetItems } : { category: "", title: "", items: resetItems, image: "" });
+    setImageFile(null);
+    setImagePreview(entry?.image || "");
+    setItemErrors([]);
+  };
+  const [isClosed, setIsClosed] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
 
   // Detect changes to form fields
   useEffect(() => {
@@ -104,6 +127,15 @@ function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
     const { name, value } = e.target;
     if (name === "category" || name === "title") {
       setFormData({ ...formData, [name]: value });
+    } else if (name === "description" && idx !== undefined) {
+      const items = [...formData.items];
+      items[idx][name] = value;
+      // Auto-fill unitOfMeasure if material exists
+      const matched = materials.find(mat => mat.name === value);
+      if (matched && matched.unitOfMeasure) {
+        items[idx].unitOfMeasure = matched.unitOfMeasure;
+      }
+      setFormData({ ...formData, items });
     } else {
       const items = [...formData.items];
       items[idx][name] = value;
@@ -158,10 +190,10 @@ function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
   };
 
   const addItem = () => {
-    setFormData({
-      ...formData,
-      items: [...formData.items, { code: "", quantity: "", description: "" }],
-    });
+    setFormData(prev => ({
+      ...prev,
+      items: [...prev.items, { code: "", quantity: "", description: "", unitOfMeasure: "", _id: generateItemId() }],
+    }));
     setItemErrors([...itemErrors, {}]);
   };
 
@@ -169,7 +201,7 @@ function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
   const removeItem = (idx) => {
     if (formData.items.length === 1) return; // Always keep at least one
     const item = formData.items[idx];
-    const hasData = item.code || item.quantity || item.description;
+    const hasData = item.code || item.quantity || item.description || item.unitOfMeasure;
     if (hasData) {
       setRemoveIdx(idx);
       return;
@@ -186,14 +218,7 @@ function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
     setRemoveIdx(null);
   };
 
-  const moveItem = (idx, direction) => {
-    const items = [...formData.items];
-    const newIndex = idx + direction;
-    if (newIndex < 0 || newIndex >= items.length) return;
-    const [movedItem] = items.splice(idx, 1);
-    items.splice(newIndex, 0, movedItem);
-    setFormData({ ...formData, items });
-  };
+  // Removed unused moveItem function (was not used)
 
 
   // (removed duplicate showSaveDialog declaration)
@@ -251,6 +276,15 @@ function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
   };
 
 
+  // Move item up or down
+  const moveItem = (idx, direction) => {
+    const items = [...formData.items];
+    const newIndex = idx + direction;
+    if (newIndex < 0 || newIndex >= items.length) return;
+    const [moved] = items.splice(idx, 1);
+    items.splice(newIndex, 0, moved);
+    setFormData({ ...formData, items });
+  };
 
   return (
     <div
@@ -298,7 +332,7 @@ function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
                   <option key={cat.key} value={cat.key}>{cat.label}</option>
                 ))}
               </select>
-              <label className="form__label">Category</label>
+              <label className="form__label">Category <span style={{color:'#b00'}}>*</span></label>
             </div>
 
             {/* Title Input */}
@@ -313,7 +347,7 @@ function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
                 required
                 disabled={isClosed}
               />
-              <label className="form__label">Title</label>
+              <label className="form__label">Title <span style={{color:'#b00'}}>*</span></label>
             </div>
 
 
@@ -349,90 +383,261 @@ function EntryForm({ entry, onClose, onSave, setDirty, requireSaveConfirm }) {
 
             {/* Materials Divider */}
             <div style={{ fontWeight: 'bold', fontSize: '1.1em', margin: '24px 0 8px 0', letterSpacing: 1 }}>Materials:</div>
-            {/* Items Section */}
-            {formData.items.map((item, idx) => (
-              <div key={idx} className="item-row" style={{ alignItems: 'flex-start' }}>
+            {/* Items Section (with up/down buttons for ordering) */}
 
+            {formData.items.map((item, idx) => {
+              return (
+                <div key={item._id} style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                  <div style={{ width: 16, minWidth: 16, textAlign: 'right', fontWeight: 500, color: '#2596be', fontSize: 13, marginRight: 2, userSelect: 'none', paddingLeft: 0 }}>{idx + 1}.</div>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div className="form__group field code-field" style={{ minWidth: 110, maxWidth: 130, flex: '1 1 110px' }}>
+                      <input
+                        type="text"
+                        name="code"
+                        placeholder="Item Code (required)"
+                        value={item.code}
+                        onChange={(e) => handleChange(e, idx)}
+                        className="form__field"
+                        required
+                        disabled={isClosed}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const next = document.querySelector(`#item-quantity-${idx}`);
+                            if (next) next.focus();
+                          }
+                        }}
+                        id={`item-code-${idx}`}
+                      />
+                      <label className="form__label">Item Code <span style={{color:'#b00'}}>*</span></label>
+                      {itemErrors[idx]?.code && <div style={{ color: '#d00', fontSize: 12 }}>{itemErrors[idx].code}</div>}
+                    </div>
 
-                <div className="form__group field code-field">
-                  <input
-                    type="text"
-                    name="code"
-                    placeholder="Item Code (required)"
-                    value={item.code}
-                    onChange={(e) => handleChange(e, idx)}
-                    className="form__field"
-                    required
-                    disabled={isClosed}
-                  />
-                  <label className="form__label">Item Code *</label>
-                  {itemErrors[idx]?.code && <div style={{ color: '#d00', fontSize: 12 }}>{itemErrors[idx].code}</div>}
-                </div>
+                    <div className="form__group field quantity-field" style={{ minWidth: 100, maxWidth: 120, flex: '1 1 100px' }}>
+                      <input
+                        type="number"
+                        name="quantity"
+                        placeholder="Quantity (optional)"
+                        value={item.quantity}
+                        onChange={(e) => handleChange(e, idx)}
+                        className="form__field"
+                        min=""
+                        disabled={isClosed}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const next = document.querySelector(`#item-description-${idx}`);
+                            if (next) next.focus();
+                          }
+                        }}
+                        id={`item-quantity-${idx}`}
+                      />
+                      <label className="form__label">Quantity</label>
+                    </div>
 
+                    <div className="form__group field description-field" style={{ minWidth: 170, maxWidth: 220, flex: '2 1 170px' }}>
+                      <input
+                        type="text"
+                        name="description"
+                        list={`material-desc-${idx}`}
+                        placeholder="Material Name (required)"
+                        value={item.description}
+                        onChange={(e) => handleChange(e, idx)}
+                        className="form__field"
+                        required
+                        disabled={isClosed}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const next = document.querySelector(`#item-uom-${idx}`);
+                            if (next) next.focus();
+                          }
+                        }}
+                        id={`item-description-${idx}`}
+                      />
+                      <datalist id={`material-desc-${idx}`}>
+                        {materials.map(mat => (
+                          <option key={mat.name} value={mat.name}>{mat.name}</option>
+                        ))}
+                      </datalist>
+                      <label className="form__label">Material Name <span style={{color:'#b00'}}>*</span></label>
+                      {itemErrors[idx]?.description && <div style={{ color: '#d00', fontSize: 12 }}>{itemErrors[idx].description}</div>}
+                    </div>
 
-
-                <div className="form__group field quantity-field">
-                  <input
-                    type="number"
-                    name="quantity"
-                    placeholder="Quantity (optional)"
-                    value={item.quantity}
-                    onChange={(e) => handleChange(e, idx)}
-                    className="form__field"
-                    min=""
-                    disabled={isClosed}
-                  />
-                  <label className="form__label">Quantity</label>
-                </div>
-
-                <div className="form__group field description-field">
-                  <input
-                    type="text"
-                    name="description"
-                    list={`material-desc-${idx}`}
-                    placeholder="Material Name (required)"
-                    value={item.description}
-                    onChange={(e) => handleChange(e, idx)}
-                    className="form__field"
-                    required
-                    disabled={isClosed}
-                  />
-                  <datalist id={`material-desc-${idx}`}>
-                    {materials.map(mat => (
-                      <option key={mat.name} value={mat.name}>{mat.name}</option>
-                    ))}
-                  </datalist>
-                  <label className="form__label">Material Name *</label>
-                  {itemErrors[idx]?.description && <div style={{ color: '#d00', fontSize: 12 }}>{itemErrors[idx].description}</div>}
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center', minWidth: 32, marginTop: 8 }}>
-                  <button
-                    type="button"
-                    title="Move up"
-                    style={{ color: '#888', background: 'none', border: 'none', cursor: idx === 0 ? 'not-allowed' : 'pointer', fontSize: 20, padding: 0, opacity: idx === 0 ? 0.4 : 1 }}
-                    disabled={idx === 0 || isClosed}
-                    onClick={() => moveItem(idx, -1)}
-                  >↑</button>
-                  <button
-                    type="button"
-                    title="Move down"
-                    style={{ color: '#888', background: 'none', border: 'none', cursor: idx === formData.items.length-1 ? 'not-allowed' : 'pointer', fontSize: 20, padding: 0, opacity: idx === formData.items.length-1 ? 0.4 : 1 }}
-                    disabled={idx === formData.items.length-1 || isClosed}
-                    onClick={() => moveItem(idx, 1)}
-                  >↓</button>
-                  {formData.items.length > 1 && (
+                    <div className="form__group field uom-field" style={{ minWidth: 120, maxWidth: 150, flex: '1 1 120px', position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        name="unitOfMeasure"
+                        placeholder="Unit of Measure"
+                        value={item.unitOfMeasure || ""}
+                        onChange={(e) => handleChange(e, idx)}
+                        className="form__field"
+                        disabled={isClosed}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            // Focus next row's code field if exists
+                            const next = document.querySelector(`#item-code-${idx + 1}`);
+                            if (next) next.focus();
+                          }
+                        }}
+                        id={`item-uom-${idx}`}
+                        style={{ paddingRight: 28 }}
+                      />
+                      <label className="form__label">Unit of Measure</label>
+                      {/* UOM Info Popover */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          right: 4,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          zIndex: 2,
+                          display: 'flex',
+                          alignItems: 'center',
+                          cursor: item.unitOfMeasure ? 'pointer' : 'not-allowed',
+                          opacity: item.unitOfMeasure ? 1 : 0.4
+                        }}
+                        tabIndex={0}
+                        aria-label="Show unit of measure"
+                        onMouseEnter={e => {
+                          const pop = e.currentTarget.querySelector('.uom-popover');
+                          if (pop) pop.style.display = 'block';
+                        }}
+                        onMouseLeave={e => {
+                          const pop = e.currentTarget.querySelector('.uom-popover');
+                          if (pop) pop.style.display = 'none';
+                        }}
+                        onFocus={e => {
+                          const pop = e.currentTarget.querySelector('.uom-popover');
+                          if (pop) pop.style.display = 'block';
+                        }}
+                        onBlur={e => {
+                          const pop = e.currentTarget.querySelector('.uom-popover');
+                          if (pop) pop.style.display = 'none';
+                        }}
+                      >
+                        <span style={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: '50%',
+                          background: '#e6f7ff',
+                          color: '#2596be',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 700,
+                          fontSize: 14,
+                          marginLeft: 4,
+                          border: '1px solid #38caef',
+                          boxShadow: '0 1px 4px rgba(38,202,239,0.10)'
+                        }}>i</span>
+                        <div
+                          className="uom-popover"
+                          style={{
+                            display: 'none',
+                            position: 'absolute',
+                            right: 28,
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: '#fff',
+                            color: '#2596be',
+                            border: '1px solid #38caef',
+                            borderRadius: 6,
+                            boxShadow: '0 2px 12px rgba(38,202,239,0.13)',
+                            padding: '10px 16px',
+                            minWidth: 120,
+                            fontSize: 14,
+                            fontWeight: 500,
+                            zIndex: 10,
+                            whiteSpace: 'nowrap',
+                            pointerEvents: 'none'
+                          }}
+                        >
+                          {item.unitOfMeasure ? (
+                            <span>Unit: <span style={{ color: '#116399', fontWeight: 700 }}>{item.unitOfMeasure}</span></span>
+                          ) : (
+                            <span style={{ color: '#b00' }}>No UOM set</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Action area: Up/Down/Remove */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginLeft: 8 }}>
                     <button
                       type="button"
-                      title="Remove material"
-                      style={{ color: '#b00', background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, padding: 0, marginLeft: 2 }}
-                      onClick={() => removeItem(idx)}
-                      disabled={isClosed}
-                    >×</button>
-                  )}
+                      title="Move up"
+                      style={{
+                        color: '#fff',
+                        background: '#2596be',
+                        border: 'none',
+                        cursor: idx === 0 ? 'not-allowed' : 'pointer',
+                        fontSize: 13,
+                        padding: 0,
+                        width: 22,
+                        height: 22,
+                        minWidth: 0,
+                        minHeight: 0,
+                        borderRadius: 4,
+                        lineHeight: 1,
+                        transition: 'background 0.2s, color 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: 'none',
+                        opacity: idx === 0 ? 0.5 : 1,
+                        marginRight: 2
+                      }}
+                      onClick={() => moveItem(idx, -1)}
+                      disabled={idx === 0 || isClosed}
+                      onMouseOver={e => { if (!isClosed && idx !== 0) e.target.style.background = '#116399'; }}
+                      onMouseOut={e => { if (!isClosed && idx !== 0) e.target.style.background = '#2596be'; }}
+                    >↑</button>
+                    <button
+                      type="button"
+                      title="Move down"
+                      style={{
+                        color: '#fff',
+                        background: '#2596be',
+                        border: 'none',
+                        cursor: idx === formData.items.length - 1 ? 'not-allowed' : 'pointer',
+                        fontSize: 13,
+                        padding: 0,
+                        width: 22,
+                        height: 22,
+                        minWidth: 0,
+                        minHeight: 0,
+                        borderRadius: 4,
+                        lineHeight: 1,
+                        transition: 'background 0.2s, color 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: 'none',
+                        opacity: idx === formData.items.length - 1 ? 0.5 : 1,
+                        marginRight: 2
+                      }}
+                      onClick={() => moveItem(idx, 1)}
+                      disabled={idx === formData.items.length - 1 || isClosed}
+                      onMouseOver={e => { if (!isClosed && idx !== formData.items.length - 1) e.target.style.background = '#116399'; }}
+                      onMouseOut={e => { if (!isClosed && idx !== formData.items.length - 1) e.target.style.background = '#2596be'; }}
+                    >↓</button>
+                    {formData.items.length > 1 && (
+                      <button
+                        type="button"
+                        title="Remove material"
+                        style={{ color: '#fff', background: '#b00', border: 'none', cursor: 'pointer', fontSize: 13, padding: 0, width: 22, height: 22, minWidth: 0, minHeight: 0, borderRadius: 4, lineHeight: 1, transition: 'background 0.2s, color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'none' }}
+                        onClick={() => removeItem(idx)}
+                        disabled={isClosed}
+                        onMouseOver={e => { e.target.style.background = '#d00'; }}
+                        onMouseOut={e => { e.target.style.background = '#b00'; }}
+                      >×</button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
 
             <button type="button" className="add-item-btn" onClick={addItem}>
