@@ -8,7 +8,8 @@ export async function bulkSaveCategories(categories) {
   return res.json();
 }
 // CATEGORY MANAGEMENT API
-const CATEGORY_API_URL = process.env.REACT_APP_CATEGORY_API_URL || "http://localhost:5000/categories";
+const BASE_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+const CATEGORY_API_URL = `${BASE_URL}/categories`;
 
 export async function getCategories() {
   const res = await fetch(CATEGORY_API_URL, { headers: getAuthHeaders() });
@@ -40,7 +41,7 @@ export async function deleteCategory(key) {
   });
   return res.json();
 }
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/progress";
+const API_URL = `${BASE_URL}/progress`;
 
 // ✅ Helper for JSON requests
 function getAuthHeaders() {

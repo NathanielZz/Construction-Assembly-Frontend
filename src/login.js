@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+const BASE_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
 
 function Login({ onLogin, onBack }) {
   const [password, setPassword] = useState("");
@@ -12,7 +12,7 @@ function Login({ onLogin, onBack }) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${BACKEND_URL}/auth/login`, {
+      const res = await fetch(`${BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),

@@ -27,7 +27,8 @@ function Filters({ category, setCategory, isAdmin }) {
 
   const loadCategories = async () => {
     try {
-      const response = await fetch(process.env.REACT_APP_CATEGORY_API_URL || "/categories");
+      const BASE_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+      const response = await fetch(`${BASE_URL}/categories`);
       if (!response.ok) throw new Error("Network response was not ok");
       const data = await response.json();
       if (Array.isArray(data)) {

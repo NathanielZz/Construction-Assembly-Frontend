@@ -1,7 +1,8 @@
 
 
 // Use the same pattern as api.js for deployment compatibility
-const MATERIALS_API_URL = process.env.REACT_APP_MATERIALS_API_URL || process.env.REACT_APP_API_URL || "http://localhost:5000/materials";
+const BASE_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+const MATERIALS_API_URL = `${BASE_URL}/materials`;
 
 function getAuthHeaders() {
   const token = sessionStorage.getItem("token");

@@ -78,7 +78,8 @@ function ResultsGallery({ entries, onEdit, onDelete, selectedEntry, setSelectedE
             quantity: quantities[e._id] || 1
           }));
           // Use API URL from .env or fallback
-          const BOM_API_URL = process.env.REACT_APP_BOM_API_URL || process.env.REACT_APP_API_URL?.replace(/\/progress$/, '/bom') || "http://localhost:5000/bom";
+          const BASE_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+          const BOM_API_URL = `${BASE_URL}/bom`;
           const token = sessionStorage.getItem("token");
           const res = await fetch(`${BOM_API_URL}/export`, {
             method: "POST",
